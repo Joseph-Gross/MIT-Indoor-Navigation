@@ -23,7 +23,7 @@ class Location:
 
 class Node:
 
-    def __init__(self, id: int, location: Location, building: int):
+    def __init__(self, id: str, location: Location, building: int):
         self.id = id
         self.location = location
         self.building = building
@@ -46,14 +46,14 @@ class Edge:
 class Graph:
 
     def __init__(self):
-        self._vertices: Dict[int, Node] = dict()   # id -> node
+        self._vertices: Dict[str, Node] = dict()   # id -> node
         self.buildings: Dict[int, Set[int]] = dict()  # building -> id
-        self.adj: Dict[int: Dict[int, float]] = dict()  # adj matrix with weights {node_id: {node_id: weight}}
+        self.adj: Dict[str, Dict[str, float]] = dict()  # adj matrix with weights {node_id: {node_id: weight}}
 
     def contains_building(self, building) -> bool:
         return building in self.buildings
 
-    def contains_node(self, node_id: int) -> bool:
+    def contains_node(self, node_id: str) -> bool:
         """
         Checks if graph contains node
         """
@@ -71,19 +71,19 @@ class Graph:
 
         self.buildings[node.building].add(node.id)
 
-    def get_node(self, node_id: int) -> Node:
+    def get_node(self, node_id: str) -> Node:
         """
         Returns the node object for a node_id
         """
         return self._vertices[node_id]
 
-    def contains_edge(self, v1_id: int, v2_id: int) -> bool:
+    def contains_edge(self, v1_id: str, v2_id: str) -> bool:
         """
         Checks if graph contains edge
         """
         return v1_id in self.adj and v2_id in self.adj[v1_id]
 
-    def add_edge(self, v1_id: int, v2_id: int):
+    def add_edge(self, v1_id: str, v2_id: str):
         """
         Adds undirected edge (v1, v2) to graph representation
         """
@@ -92,7 +92,7 @@ class Graph:
         self.adj[v1_id][v2_id] = edge.weight
         self.adj[v2_id][v1_id] = edge.weight
 
-    def get_edge(self, v1_id: int, v2_id: int) -> Edge:
+    def get_edge(self, v1_id: str, v2_id: str) -> Edge:
         v1 = self._vertices[v1_id]
         v2 = self._vertices[v2_id]
         edge = Edge(v1, v2)
@@ -197,7 +197,6 @@ def parse_nodes(nodes_csv_file_path: str, polygons: Dict[int, Polygon]) -> List[
     CSV structure is assumes to be <location str>, <building num>, <description>
     """
 
-    node_name_to_id = {}
     nodes = []
     with open(nodes_csv_file_path) as nodes_csv:
         csv_reader = csv.reader(nodes_csv, delimiter=',')
@@ -218,15 +217,14 @@ def parse_nodes(nodes_csv_file_path: str, polygons: Dict[int, Polygon]) -> List[
                     building = key
                     break
 
-            node_name_to_id[node_name] = line_count
-            node = Node(id=line_count, location=location, building=building)
+            node = Node(id=node_name, location=location, building=building)
             nodes.append(node)
             line_count += 1
 
-    return nodes, node_name_to_id
+    return nodes
 
 
-def parse_edges(edges_json_file_path: str, node_name_to_id: Dict[str, int]) -> List[Tuple[int, int]]:
+def parse_edges(edges_json_file_path: str) -> List[Tuple[int, int]]:
     """
     Takes in an adjacency list representation of the graph as a JSON file and converts to a list of edges
     """
@@ -235,11 +233,8 @@ def parse_edges(edges_json_file_path: str, node_name_to_id: Dict[str, int]) -> L
     with open(edges_json_file_path) as edges_json_file:
         edges_json = json.load(edges_json_file)
 
-        for v1_name, adj_nodes in edges_json.items():
-            for v2_name in adj_nodes:
-                v1_id = node_name_to_id[v1_name]
-                v2_id = node_name_to_id[v2_name]
-
+        for v1_id, adj_nodes in edges_json.items():
+            for v2_id in adj_nodes:
                 if (v1_id, v2_id) in edges or (v2_id, v1_id) in edges:
                     continue
 
@@ -274,14 +269,19 @@ def create_graph(nodes: List[Node], edges: List[Tuple[int, int]]) -> Graph:
 
 if __name__ == "__main__":
     polygons = parse_polygons(POLYGONS_CSV_FILE_PATH)
-    nodes, node_name_to_id = parse_nodes(NODES_CSV_FILE_PATH, polygons)
-    edges = parse_edges(EDGES_JSON_FILE_PATH, node_name_to_id)
+    nodes = parse_nodes(NODES_CSV_FILE_PATH, polygons)
+    edges = parse_edges(EDGES_JSON_FILE_PATH)
 
     graph = create_graph(nodes, edges)
 
-    #
-    # pprint.pprint(node_name_to_id)
-    #
-    # pprint.pprint(polygons)
-    # pprint.pprint(nodes)
+    print("Polygons:")
+    pprint.pprint(polygons)
+    print("---------")
+
+    print("Nodes:")
+    pprint.pprint(nodes)
+    print("---------")
+
+    print("Weighted Adjacency List:")
     pprint.pprint(graph.adj)
+    print("---------")
