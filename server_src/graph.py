@@ -1,12 +1,15 @@
 from dataclasses import dataclass
 from typing import Dict, Set, List, Optional, Tuple
 from geopy import distance
+import json
 
 import csv
 import pprint
 
 NODES_CSV_FILE_PATH = "./nodes.csv"
 POLYGONS_CSV_FILE_PATH = "./polygons.csv"
+EDGES_JSON_FILE_PATH = "./edges.json"
+
 
 @dataclass
 class Location:
@@ -194,6 +197,7 @@ def parse_nodes(nodes_csv_file_path: str, polygons: Dict[int, Polygon]) -> List[
     CSV structure is assumes to be <location str>, <building num>, <description>
     """
 
+    node_name_to_id = {}
     nodes = []
     with open(nodes_csv_file_path) as nodes_csv:
         csv_reader = csv.reader(nodes_csv, delimiter=',')
@@ -203,7 +207,7 @@ def parse_nodes(nodes_csv_file_path: str, polygons: Dict[int, Polygon]) -> List[
                 line_count += 1
                 continue
 
-            raw_location_str, building_num, _ = row
+            raw_location_str, node_name, _ = row
             location_str = raw_location_str[7: -1]
             lat, lon = location_str.split()
             location = Location(lat=float(lat), lon=float(lon))
@@ -214,11 +218,35 @@ def parse_nodes(nodes_csv_file_path: str, polygons: Dict[int, Polygon]) -> List[
                     building = key
                     break
 
+            node_name_to_id[node_name] = line_count
             node = Node(id=line_count, location=location, building=building)
             nodes.append(node)
             line_count += 1
 
-    return nodes
+    return nodes, node_name_to_id
+
+
+def parse_edges(edges_json_file_path: str, node_name_to_id: Dict[str, int]) -> List[Tuple[int, int]]:
+    """
+    Takes in an adjacency list representation of the graph as a JSON file and converts to a list of edges
+    """
+
+    edges = set()
+    with open(edges_json_file_path) as edges_json_file:
+        edges_json = json.load(edges_json_file)
+
+        for v1_name, adj_nodes in edges_json.items():
+            for v2_name in adj_nodes:
+                v1_id = node_name_to_id[v1_name]
+                v2_id = node_name_to_id[v2_name]
+
+                if (v1_id, v2_id) in edges or (v2_id, v1_id) in edges:
+                    continue
+
+                edge = (v1_id, v2_id)
+                edges.add(edge)
+
+    return list(edges)
 
 
 def create_graph(nodes: List[Node], edges: List[Tuple[int, int]]) -> Graph:
@@ -245,15 +273,15 @@ def create_graph(nodes: List[Node], edges: List[Tuple[int, int]]) -> Graph:
 
 
 if __name__ == "__main__":
-    edges = [
-        (1, 2),
-        (1, 3),
-        (1, 4)
-    ]
     polygons = parse_polygons(POLYGONS_CSV_FILE_PATH)
-    nodes = parse_nodes(NODES_CSV_FILE_PATH, polygons)
+    nodes, node_name_to_id = parse_nodes(NODES_CSV_FILE_PATH, polygons)
+    edges = parse_edges(EDGES_JSON_FILE_PATH, node_name_to_id)
+
     graph = create_graph(nodes, edges)
 
-    pprint.pprint(polygons)
-    pprint.pprint(nodes)
+    #
+    # pprint.pprint(node_name_to_id)
+    #
+    # pprint.pprint(polygons)
+    # pprint.pprint(nodes)
     pprint.pprint(graph.adj)
