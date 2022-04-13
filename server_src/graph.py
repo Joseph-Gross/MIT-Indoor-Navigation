@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 from typing import Dict, Set, List, Optional, Tuple
-from geopy import distance
-import json
 
 import csv
+import json
 import pprint
 
-import sys
+from geopy import distance
 from queue import PriorityQueue
+
 NODES_CSV_FILE_PATH = "./nodes.csv"
 POLYGONS_CSV_FILE_PATH = "./polygons.csv"
 EDGES_JSON_FILE_PATH = "./edges.json"
