@@ -6,6 +6,8 @@ import json
 import csv
 import pprint
 
+import sys
+from queue import PriorityQueue
 NODES_CSV_FILE_PATH = "./nodes.csv"
 POLYGONS_CSV_FILE_PATH = "./polygons.csv"
 EDGES_JSON_FILE_PATH = "./edges.json"
@@ -103,6 +105,9 @@ class Graph:
         Returns a list of node ids in building
         """
         return self.buildings[building]
+
+    def get_node_ids(self):
+        return [key for key in self._vertices]
 
 
 class Polygon:
@@ -265,7 +270,51 @@ def create_graph(nodes: List[Node], edges: List[Tuple[int, int]]) -> Graph:
         graph.add_edge(v1_id, v2_id)
 
     return graph
-
+#path finding with input as a start node and building destination
+# def create_empty_path_graph(nodes):
+#     empty_graph = [[0 for column in range(nodes)]
+#                     for row in range(nodes)]
+#     return empty_graph
+def min_distance(dist, nodes, spt_set):
+    min = float('inf')
+    for u in nodes:
+        if dist[u] <= min and u not in spt_set:
+            min = dist[u]
+            min_index = u
+    return min_index
+#need to figure out how to translate our graph into what dijkstra expects
+def dijkstra(nodes,actual_graph,src):
+    dist = {node_id: float('inf') for node_id in nodes}
+    dist[src] = 0
+    spt_set = set()
+    pq = PriorityQueue()
+    pq.put((0,src))
+    parent = {}
+    parent[src] = None
+    while not pq.empty():
+        (d, current_vertex) = pq.get()
+        spt_set.add(current_vertex)
+        for n in list(graph.adj[current_vertex].keys()):
+            #if actual_graph.contains_edge(current_vertex,n):
+            distance = actual_graph.adj[current_vertex][n]
+            if n not in spt_set:
+                old_cost = dist[n]
+                new_cost = dist[current_vertex] + distance
+                if new_cost < old_cost:
+                    pq.put((new_cost,n))
+                    dist[n] = new_cost
+                    parent[n] = current_vertex
+    return (dist,parent)
+    # for cout in range(len(nodes)):
+    #     x = min_distance(dist, nodes, spt_set)
+    #     spt_set.add(x)
+    #     #spt_set[x] = True
+    #     for y in nodes:
+    #         if actual_graph.contains_edge(x,y) and y in spt_set and dist[y] > dist[x] + actual_graph.adj[x][y]:
+    #             dist[y] = dist[x] + actual_graph.adj[x][y]
+    # return dist
+#after dijkstra just want to iterate over the nodes within our destination building
+#then pick the one that is closest 
 
 if __name__ == "__main__":
     polygons = parse_polygons(POLYGONS_CSV_FILE_PATH)
@@ -285,3 +334,5 @@ if __name__ == "__main__":
     print("Weighted Adjacency List:")
     pprint.pprint(graph.adj)
     print("---------")
+
+    print(dijkstra(graph.get_node_ids(), graph,"1.1"))
