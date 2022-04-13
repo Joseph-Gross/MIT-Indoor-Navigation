@@ -283,7 +283,8 @@ def min_distance(dist, nodes, spt_set):
             min_index = u
     return min_index
 #need to figure out how to translate our graph into what dijkstra expects
-def dijkstra(nodes,actual_graph,src):
+def dijkstra(actual_graph,src):
+    nodes = actual_graph.get_node_ids()
     dist = {node_id: float('inf') for node_id in nodes}
     dist[src] = 0
     spt_set = set()
@@ -315,6 +316,22 @@ def dijkstra(nodes,actual_graph,src):
     # return dist
 #after dijkstra just want to iterate over the nodes within our destination building
 #then pick the one that is closest 
+def get_path(actual_graph,start_node,building_num):
+    (distances,parents) = dijkstra(actual_graph,start_node)
+    building_nodes = actual_graph.get_nodes_by_building(building_num)
+    best_building_node = None
+    best_building_dist = float('inf')
+    for n in building_nodes:
+        if distances[n]<best_building_dist:
+            best_building_dist = distances[n]
+            best_building_node = n
+    path = []
+    current_node = best_building_node
+    while parents[current_node]!=None:
+        path.append(current_node)
+        current_node = parents[current_node]
+    path.append(current_node)
+    return path
 
 if __name__ == "__main__":
     polygons = parse_polygons(POLYGONS_CSV_FILE_PATH)
@@ -334,5 +351,6 @@ if __name__ == "__main__":
     print("Weighted Adjacency List:")
     pprint.pprint(graph.adj)
     print("---------")
-
-    print(dijkstra(graph.get_node_ids(), graph,"1.1"))
+    print(dijkstra(graph,"1.1"))
+    print("---------")
+    print(get_path(graph,"1.1",2))
