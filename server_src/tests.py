@@ -46,21 +46,41 @@ class PolygonTests(unittest.TestCase):
 class NodeTests(unittest.TestCase):
     def setUp(self):
         self.nodes = graph_utils.parse_nodes(NODES_CSV_FILE_PATH, polygons={})
+
+    def test_node_ids_unique(self):
+        unique_node_ids = set([node.id for node in self.nodes])
+        self.assertEqual(len(unique_node_ids), len(self.nodes))
         
     def test_nodes_parse_without_polygons(self):
-        pass
+        expected_num_nodes = 25
+
+        self.assertEqual(expected_num_nodes, len(self.nodes))
     
-    def test_nodes_parser_with_polygons(self):
-        pass
+    def test_nodes_parse_with_polygons(self):
+        polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
+        nodes = graph_utils.parse_nodes(NODES_CSV_FILE_PATH, polygons)
+        
+        for node in nodes:
+            expected_building_num = int(node.id.split('.')[0])
+            self.assertEqual(expected_building_num, node.building)
 
 
 class EdgeTests(unittest.TestCase):
     def setUp(self):
         self.edges = graph_utils.parse_edges(EDGES_JSON_FILE_PATH)
 
+    def test_edges_unique(self):
+        unique_edges = set(self.edges)
+
+        self.assertEqual(len(unique_edges), len(self.edges))
+
 
 class GraphTests(unittest.TestCase):
-    pass
+    def setUp(self):
+        polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
+        nodes = graph_utils.parse_nodes(NODES_CSV_FILE_PATH, polygons)
+        edges = graph_utils.parse_edges(EDGES_JSON_FILE_PATH)
+        self.graph = graph_utils.create_graph(nodes, edges)
 
 
 class DijkstraTests(unittest.TestCase):
