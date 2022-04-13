@@ -79,6 +79,12 @@ class Graph:
         """
         return self._vertices[node_id]
 
+    def get_neighbors(self, node_id: str) -> List[str]:
+        """
+        Given src node returns list of neighbor node ids
+        """
+        return list(self.adj[node_id].keys())
+
     def contains_edge(self, v1_id: str, v2_id: str) -> bool:
         """
         Checks if graph contains edge
@@ -108,6 +114,80 @@ class Graph:
 
     def get_node_ids(self):
         return [key for key in self._vertices]
+
+    def get_weight(self, v1_id: str, v2_id: str):
+        return self.adj[v1_id][v2_id]
+
+    def sssp(self, src: str):
+        """
+        Solves sssp from src node on our path.
+
+        src is a valid node id and graph is a valid graph representation
+
+        Returns distance dictionary with shortest distance to every node and parent point dictionary
+        """
+        assert self.contains_node(src)
+
+        nodes = self.get_node_ids()
+        dist = {node_id: float('inf') for node_id in nodes}
+        dist[src] = 0
+
+        seen = set()
+        pq = PriorityQueue()
+        pq.put((0, src))
+        parent = dict()
+
+        parent[src] = None
+        while not pq.empty():
+            (d, current_vertex) = pq.get()
+            seen.add(current_vertex)
+            for n in self.get_neighbors(current_vertex):
+                edge_weight = self.get_weight(current_vertex, n)
+                if n not in seen:
+                    old_cost = dist[n]
+                    new_cost = dist[current_vertex] + edge_weight
+                    if new_cost < old_cost:
+                        pq.put((new_cost, n))
+                        dist[n] = new_cost
+                        parent[n] = current_vertex
+
+        return dist, parent
+
+    def parse_sssp_parent(self, parent: Dict[str, str], dest: str):
+        """
+        Takes in parent pointer dictionary (result of single source shortest path algorithm) and returns a list of
+        node ids representing the shortest path to destination.
+        """
+        path = []
+        current_node = dest
+        while parent[current_node] is not None:
+            path.append(current_node)
+            current_node = parent[current_node]
+        path.append(current_node)
+        return path[::-1]
+
+    def find_shortest_path(self, src: str, building: int):
+        assert self.contains_node(src)
+        assert self.contains_building(building)
+
+        dist, parent = self.sssp(src)
+
+        nodes_in_building = self.get_nodes_by_building(building)
+        destination = None
+        min_dist = float('inf')
+        for v in nodes_in_building:
+            if dist[v] < min_dist:
+                min_dist = dist[v]
+                destination = v
+
+        return self.parse_sssp_parent(parent, destination)
+
+    def find_closest_node(self, point: Location):
+        """
+        Given location, find closest node in the graph. This will be used to as the start node when calculating the
+        shortest path from a location
+        """
+        pass
 
 
 class Polygon:
@@ -270,68 +350,7 @@ def create_graph(nodes: List[Node], edges: List[Tuple[int, int]]) -> Graph:
         graph.add_edge(v1_id, v2_id)
 
     return graph
-#path finding with input as a start node and building destination
-# def create_empty_path_graph(nodes):
-#     empty_graph = [[0 for column in range(nodes)]
-#                     for row in range(nodes)]
-#     return empty_graph
-def min_distance(dist, nodes, spt_set):
-    min = float('inf')
-    for u in nodes:
-        if dist[u] <= min and u not in spt_set:
-            min = dist[u]
-            min_index = u
-    return min_index
-#need to figure out how to translate our graph into what dijkstra expects
-def dijkstra(actual_graph,src):
-    nodes = actual_graph.get_node_ids()
-    dist = {node_id: float('inf') for node_id in nodes}
-    dist[src] = 0
-    spt_set = set()
-    pq = PriorityQueue()
-    pq.put((0,src))
-    parent = {}
-    parent[src] = None
-    while not pq.empty():
-        (d, current_vertex) = pq.get()
-        spt_set.add(current_vertex)
-        for n in list(graph.adj[current_vertex].keys()):
-            #if actual_graph.contains_edge(current_vertex,n):
-            distance = actual_graph.adj[current_vertex][n]
-            if n not in spt_set:
-                old_cost = dist[n]
-                new_cost = dist[current_vertex] + distance
-                if new_cost < old_cost:
-                    pq.put((new_cost,n))
-                    dist[n] = new_cost
-                    parent[n] = current_vertex
-    return (dist,parent)
-    # for cout in range(len(nodes)):
-    #     x = min_distance(dist, nodes, spt_set)
-    #     spt_set.add(x)
-    #     #spt_set[x] = True
-    #     for y in nodes:
-    #         if actual_graph.contains_edge(x,y) and y in spt_set and dist[y] > dist[x] + actual_graph.adj[x][y]:
-    #             dist[y] = dist[x] + actual_graph.adj[x][y]
-    # return dist
-#after dijkstra just want to iterate over the nodes within our destination building
-#then pick the one that is closest 
-def get_path(actual_graph,start_node,building_num):
-    (distances,parents) = dijkstra(actual_graph,start_node)
-    building_nodes = actual_graph.get_nodes_by_building(building_num)
-    best_building_node = None
-    best_building_dist = float('inf')
-    for n in building_nodes:
-        if distances[n]<best_building_dist:
-            best_building_dist = distances[n]
-            best_building_node = n
-    path = []
-    current_node = best_building_node
-    while parents[current_node]!=None:
-        path.append(current_node)
-        current_node = parents[current_node]
-    path.append(current_node)
-    return path
+
 
 if __name__ == "__main__":
     polygons = parse_polygons(POLYGONS_CSV_FILE_PATH)
@@ -351,6 +370,7 @@ if __name__ == "__main__":
     print("Weighted Adjacency List:")
     pprint.pprint(graph.adj)
     print("---------")
-    print(dijkstra(graph,"1.1"))
+
+    print("Path Finding:")
+    print(graph.find_shortest_path("1.1", 10))
     print("---------")
-    print(get_path(graph,"1.1",2))
