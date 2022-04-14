@@ -14,7 +14,18 @@ def get_building(polys, coords):
     return str(building_num)
 
 
+MOCK_DATA = {
+    'curr_node': '1.1',
+    'dist_next_node': 50.5,
+    'dir_next_node': 'W',
+    'has_arrived': False,
+    'eta': '3 min'
+}
+
+
 def request_handler(request):
+    return MOCK_DATA
+
     if "lat" not in request['values'] or "lon" not in request['values']:
         return "You must enter an x and y value."
 

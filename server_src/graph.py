@@ -182,12 +182,22 @@ class Graph:
 
         return self.parse_sssp_parent(parent, destination)
 
-    def find_closest_node(self, point: Location):
+    def find_closest_node(self, point: Location) -> str:
         """
         Given location, find closest node in the graph. This will be used to as the start node when calculating the
         shortest path from a location
         """
-        pass
+        src = Node("s", point, -1)
+
+        min_dist = float('inf')
+        closest_node = None
+        for v in self._vertices.values():
+            edge = Edge(src, v)
+            if edge.weight < min_dist:
+                min_dist = edge.weight
+                closest_node = v
+
+        return closest_node.id
 
 
 class Polygon:
@@ -244,6 +254,9 @@ class Polygon:
                 count += 1
 
         return count % 2 == 1
+
+    def __repr__(self):
+        return f"{self.vertices}"
 
 
 def parse_polygons(polygons_csv_file_path: str) -> Dict[int, Polygon]:
@@ -372,5 +385,7 @@ if __name__ == "__main__":
     print("---------")
 
     print("Path Finding:")
-    print(graph.find_shortest_path("1.1", 10))
+    print(graph.find_shortest_path("7.1", 2))
     print("---------")
+
+
