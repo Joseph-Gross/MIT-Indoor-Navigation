@@ -1,5 +1,7 @@
-import graph  # import our graph.py module
-POLYGONS_CSV_FILE_PATH = "./polygons.csv"
+import sys
+sys.path.append('/var/jail/home/team8/server_src')
+import graph
+POLYGONS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/polygons.csv"
 
 
 def get_building(polys, coords):
