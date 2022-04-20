@@ -2,7 +2,7 @@ import unittest
 import csv
 
 from server_src import graph as graph_utils
-from server_src.graph import EDGES_CSV_FILE_PATH, POLYGONS_CSV_FILE_PATH, NODES_CSV_FILE_PATH
+from server_src.graph import POLYGONS_CSV_FILE_PATH, NODES_1_CSV_FILE_PATH, EDGES_1_CSV_FILE_PATH
 
 
 class PolygonTests(unittest.TestCase):
@@ -46,14 +46,14 @@ class PolygonTests(unittest.TestCase):
 
 class NodeTests(unittest.TestCase):
     def setUp(self):
-        self.nodes = graph_utils.parse_nodes(NODES_CSV_FILE_PATH, polygons={})
+        self.nodes = graph_utils.parse_nodes(NODES_1_CSV_FILE_PATH, polygons={}, floor=1)
 
     def test_node_ids_unique(self):
         unique_node_ids = set([node.id for node in self.nodes])
         self.assertEqual(len(unique_node_ids), len(self.nodes))
         
     def test_nodes_parse_without_polygons(self):
-        nodes_csv = open(NODES_CSV_FILE_PATH)
+        nodes_csv = open(NODES_1_CSV_FILE_PATH)
         csv_reader = csv.reader(nodes_csv)
         expected_num_nodes = len(list(csv_reader)) - 1
 
@@ -61,7 +61,7 @@ class NodeTests(unittest.TestCase):
     
     def test_nodes_parse_with_polygons(self):
         polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
-        nodes = graph_utils.parse_nodes(NODES_CSV_FILE_PATH, polygons)
+        nodes = graph_utils.parse_nodes(NODES_1_CSV_FILE_PATH, polygons, 1)
         
         for node in nodes:
             expected_building_num = node.id.split('.')[0]
@@ -70,8 +70,9 @@ class NodeTests(unittest.TestCase):
 
 class EdgeTests(unittest.TestCase):
     def setUp(self):
-        nodes = graph_utils.parse_nodes(NODES_CSV_FILE_PATH, polygons={})
-        self.edges = graph_utils.parse_edges(EDGES_CSV_FILE_PATH, nodes)
+        polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
+        nodes = graph_utils.parse_nodes(NODES_1_CSV_FILE_PATH, polygons, 1)
+        self.edges = graph_utils.parse_edges(EDGES_1_CSV_FILE_PATH, nodes)
 
     def test_edges_unique(self):
         unique_edges = set(self.edges)
@@ -82,23 +83,23 @@ class EdgeTests(unittest.TestCase):
 class GraphTests(unittest.TestCase):
     def setUp(self):
         polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
-        nodes = graph_utils.parse_nodes(NODES_CSV_FILE_PATH, polygons)
-        edges = graph_utils.parse_edges(EDGES_CSV_FILE_PATH, nodes)
+        nodes = graph_utils.parse_nodes(NODES_1_CSV_FILE_PATH, polygons, 1)
+        edges = graph_utils.parse_edges(EDGES_1_CSV_FILE_PATH, nodes)
         self.graph = graph_utils.create_graph(nodes, edges)
 
 
 class DijkstraTests(unittest.TestCase):
     def setUp(self):
         polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
-        nodes = graph_utils.parse_nodes(NODES_CSV_FILE_PATH, polygons)
-        edges = graph_utils.parse_edges(EDGES_CSV_FILE_PATH, nodes)
+        nodes = graph_utils.parse_nodes(NODES_1_CSV_FILE_PATH, polygons, 1)
+        edges = graph_utils.parse_edges(EDGES_1_CSV_FILE_PATH, nodes)
         self.graph = graph_utils.create_graph(nodes, edges)
 
     def test_shortest_path_0(self):
-        src = "8.2"
-        dest = "4.1"
+        src = "8.1.2.b"
+        dest = "4.1.1.b"
 
-        expected_path = ["8.2", "8.1", "4.3", "4.2", "4.1"]
+        expected_path = ["8.1.2.b", "8.1.1.b", "4.1.3.b", "4.1.2.b", "4.1.1.b"]
 
         dist, parent = self.graph.sssp(src)
         shortest_path = self.graph.parse_sssp_parent(parent, dest)
@@ -106,41 +107,41 @@ class DijkstraTests(unittest.TestCase):
         self.assertEqual(expected_path, shortest_path)
 
     def test_shortest_path_1(self):
-        src = "3.1"
-        dest = "4.3"
+        src = "3.1.1.b"
+        dest = "4.1.3.b"
 
-        expected_path = ["3.1", "kc.2", "4.1", "4.2", "4.3"]
+        expected_path = ["3.1.1.b", "kc.1.2.b", "4.1.1.b", "4.1.2.b", "4.1.3.b"]
         dist, parent = self.graph.sssp(src)
         shortest_path = self.graph.parse_sssp_parent(parent, dest)
 
         self.assertEqual(expected_path, shortest_path)
 
     def test_shortest_path_2(self):
-        src = "7.2"
-        dest = "10.2"
+        src = "7.1.2.b"
+        dest = "10.1.2.b"
 
-        expected_path = ["7.2", "7.1", "3.3", "3.4", "10.1", "10.2"]
+        expected_path = ["7.1.2.b", "7.1.1.b", "3.1.3.b", "3.1.4.b", "10.1.1.b", "10.1.2.b"]
         dist, parent = self.graph.sssp(src)
         shortest_path = self.graph.parse_sssp_parent(parent, dest)
 
         self.assertEqual(expected_path, shortest_path)
 
     def test_shortest_path_3(self):
-        src = "11.1"
-        dest = "2.1"
+        src = "11.1.1.b"
+        dest = "2.1.1.b"
 
-        expected_path = ["11.1", "3.3", "3.2", "3.1", "kc.2", "2.1"]
+        expected_path = ["11.1.1.b", "3.1.3.b", "3.1.2.b", "3.1.1.b", "kc.1.2.b", "2.1.1.b"]
         dist, parent = self.graph.sssp(src)
         shortest_path = self.graph.parse_sssp_parent(parent, dest)
 
         self.assertEqual(expected_path, shortest_path)
 
     def test_shortest_path_to_building_0(self):
-        src = "3.1"
+        src = "3.1.1.b"
         dest_building = "2"  # Building number
 
-        expected_path = ["3.1", "kc.2", "4.1", "2.4"]
-        expected_dest = "2.4"
+        expected_path = ["3.1.1.b", "kc.1.2.b", "4.1.1.b", "2.1.4.b"]
+        expected_dest = expected_path[-1]
         shortest_path, dist = self.graph.find_shortest_path(src, dest_building)
         dest = shortest_path[-1]
 
@@ -148,11 +149,11 @@ class DijkstraTests(unittest.TestCase):
         self.assertEqual(expected_dest, dest)
     
     def test_shortest_path_to_building_1(self):
-        src = "1.1"
+        src = "1.1.1.b"
         dest_building = "10"  # Building number
 
-        expected_path = ["1.1", "3.1", "3.2", "3.3", "3.4", "10.1"]
-        expected_dest = "10.1"
+        expected_path = ["1.1.1.b", "3.1.1.b", "3.1.2.b", "3.1.3.b", "3.1.4.b", "10.1.1.b"]
+        expected_dest = expected_path[-1]
         shortest_path, dist = self.graph.find_shortest_path(src, dest_building)
         dest = shortest_path[-1]
 
@@ -160,11 +161,11 @@ class DijkstraTests(unittest.TestCase):
         self.assertEqual(expected_dest, dest)
     
     def test_shortest_path_to_building_2(self):
-        src = "4.4"
+        src = "4.1.4.b"
         dest_building = "2"  # Building number
 
-        expected_path = ["4.4", "4.3", "4.2", "4.1", "2.4"]
-        expected_dest = "2.4"
+        expected_path = ["4.1.4.b", "4.1.3.b", "4.1.2.b", "4.1.1.b", "2.1.4.b"]
+        expected_dest = expected_path[-1]
         shortest_path, dist = self.graph.find_shortest_path(src, dest_building)
         dest = shortest_path[-1]
 
@@ -172,11 +173,11 @@ class DijkstraTests(unittest.TestCase):
         self.assertEqual(expected_dest, dest)
     
     def test_shortest_path_to_building_3(self):
-        src = "10.2"
+        src = "10.1.2.b"
         dest_building = "1"  # Building number
 
-        expected_path = ["10.2", "10.1", "3.4", "3.3", "3.2", "3.1", "1.4"]
-        expected_dest = "1.4"
+        expected_path = ["10.1.2.b", "10.1.1.b", "3.1.4.b", "3.1.3.b", "3.1.2.b", "3.1.1.b", "1.1.4.b"]
+        expected_dest = expected_path[-1]
         shortest_path, dist = self.graph.find_shortest_path(src, dest_building)
         dest = shortest_path[-1]
 

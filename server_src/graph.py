@@ -15,17 +15,16 @@ POLYGONS_CSV_FILE_PATH = "data/polygons.csv"
 NODES_0_CSV_FILE_PATH = "data/nodes_0.csv"
 NODES_1_CSV_FILE_PATH = "data/nodes_1.csv"
 NODES_STAIRS_CSV_FILE_PATH = "data/nodes_stairs.csv"
-NODES_ELEVATORS_FILE_PATH = "data/nodes_elevators.csv"
+NODES_ELEVATORS_CSV_FILE_PATH = "data/nodes_elevators.csv"
 
 EDGES_0_CSV_FILE_PATH = "data/edges_0.csv"
 EDGES_1_CSV_FILE_PATH = "data/edges_1.csv"
 
 
-class NodeTypes(Enum):
-    TUNNEL = "level_0"
-    FIRST_FLOOR = "level_1"
-    ELEVATOR = "elevator"
-    STAIR = "stair"
+class NodeType(Enum):
+    BUILDING = "b"
+    ELEVATOR = "e"
+    STAIR = "s"
 
 
 @dataclass
@@ -40,11 +39,13 @@ class Location:
 
 class Node:
 
-    def __init__(self, id: str, location: Location, floor: int, building_name: Optional[str]):
+    def __init__(self, id: str, location: Location, floor: int, building_name: Optional[str],
+                 node_type: NodeType = NodeType.BUILDING):
         self.id = id
         self.location = location
         self.building = building_name
         self.floor = floor
+        self.node_type = node_type
 
     def __repr__(self):
         return f"Node({self.id}, {self.location}, {self.floor}, {self.building})"
@@ -78,6 +79,7 @@ class Graph:
         self._vertices: Dict[str, Node] = dict()   # node_id -> node
         self.buildings: Dict[str, Set[str]] = dict()  # building -> node_id
         self.floors: Dict[int, Set[str]] = dict()  # floor -> node_id
+        self.types: Dict[NodeType, Set[str]] = dict() # NodeType -> node_id
         self.adj: Dict[str, Dict[str, float]] = dict()  # adj matrix with weights {node_id: {node_id: weight}}
 
     def contains_floor(self, floor: int) -> bool:
@@ -85,6 +87,9 @@ class Graph:
 
     def contains_building(self, building_name: str) -> bool:
         return building_name in self.buildings
+
+    def contains_type(self, node_type: NodeType) -> bool:
+        return node_type in self.types
 
     def contains_node(self, node_id: str) -> bool:
         """
@@ -111,8 +116,12 @@ class Graph:
         if not self.contains_floor(node.floor):
             self.floors[node.floor] = set()
 
+        if not self.contains_type(node.node_type):
+            self.types[node.node_type] = set()
+
         self.buildings[node.building].add(node.id)
         self.floors[node.floor].add(node.id)
+        self.types[node.node_type].add(node.id)
 
     def add_edge(self, v1_id: str, v2_id: str):
         """
@@ -149,6 +158,9 @@ class Graph:
 
     def get_nodes_by_floor(self, floor: int) -> Set[str]:
         return self.floors[floor]
+
+    def get_nodes_by_type(self, node_type: NodeType) -> Set[str]:
+        return self.types[node_type]
 
     def get_node_ids(self):
         return [key for key in self._vertices]
@@ -330,7 +342,8 @@ def parse_polygons(polygons_csv_file_path: str) -> Dict[str, Polygon]:
     return polygons
 
 
-def parse_nodes(nodes_csv_file_path: str, polygons: Dict[str, Polygon], floor: int) -> List[Node]:
+def parse_nodes(nodes_csv_file_path: str, polygons: Dict[str, Polygon], floor: Optional[int],
+                node_type: NodeType = NodeType.BUILDING) -> List[Node]:
     """
     CSV structure is assumes to be <location str>, <building num>, <description>
     """
@@ -357,8 +370,9 @@ def parse_nodes(nodes_csv_file_path: str, polygons: Dict[str, Polygon], floor: i
 
             node_name = node_name.split(".")
             node_name.insert(1, str(floor))
+            node_name.append(node_type.value)
             node_id = ".".join(node_name)
-            node = Node(id=node_id, location=location, building_name=building, floor=floor)
+            node = Node(id=node_id, location=location, building_name=building, floor=floor, node_type=node_type)
             nodes.append(node)
             line_count += 1
 
@@ -406,6 +420,9 @@ def create_graph(nodes: List[Node], edges: List[Tuple[str, str]]) -> Graph:
     graph = Graph()
 
     for node in nodes:
+        if node.node_type == NodeType.BUILDING:
+            graph.add_node(node)
+            continue
         graph.add_node(node)
 
     for v1_id, v2_id in edges:
@@ -418,6 +435,8 @@ def create_graph(nodes: List[Node], edges: List[Tuple[str, str]]) -> Graph:
             raise ValueError(f"Duplicate edge found. Edge ({v1_id, v2_id}) already exists in graph")
 
         graph.add_edge(v1_id, v2_id)
+
+    # TODO: Add elevator and stair edges to graph
 
     return graph
 
@@ -442,15 +461,17 @@ def calculate_eta(distance: float, avg_velocity: float = 1.34112):
 
 if __name__ == "__main__":
     polygons = parse_polygons(POLYGONS_CSV_FILE_PATH)
+    nodes_stairs = parse_nodes(NODES_STAIRS_CSV_FILE_PATH, polygons, None, NodeType.STAIR)
+    nodes_elevators = parse_nodes(NODES_ELEVATORS_CSV_FILE_PATH, polygons, None, NodeType.ELEVATOR)
     nodes_0 = parse_nodes(NODES_0_CSV_FILE_PATH, polygons, 0)
     nodes_1 = parse_nodes(NODES_1_CSV_FILE_PATH, polygons, 1)
 
     edges_0 = parse_edges(EDGES_0_CSV_FILE_PATH, nodes_0)
     edges_1 = parse_edges(EDGES_1_CSV_FILE_PATH, nodes_1)
 
-    nodes = nodes_0 + nodes_1
+    nodes = nodes_stairs + nodes_elevators + nodes_0 + nodes_1
     edges = edges_0 + edges_1
-    graph = create_graph(nodes, edges)
+    graph = create_graph(nodes, edges, num_floors=2)
 
     print("Polygons:")
     pprint.pprint(polygons)
@@ -469,7 +490,7 @@ if __name__ == "__main__":
     print("---------")
 
     print("Path Finding:")
-    print(graph.find_shortest_path("7.1.1", "2"))
+    print(graph.find_shortest_path("7.1.1.b", "2"))
     print("---------")
 
     test = Location(lon=42.358478, lat=-71.092197)
