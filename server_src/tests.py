@@ -137,7 +137,7 @@ class DijkstraTests(unittest.TestCase):
 
         expected_path = ["3.1", "4.1", "2.4"]
         expected_dest = "2.4"
-        shortest_path = self.graph.find_shortest_path(src, dest_building)
+        shortest_path, dist = self.graph.find_shortest_path(src, dest_building)
         dest = shortest_path[-1]
 
         self.assertEqual(expected_path, shortest_path)
@@ -149,7 +149,7 @@ class DijkstraTests(unittest.TestCase):
 
         expected_path = ["1.1", "3.1", "3.2", "3.3", "3.4", "10.1"]
         expected_dest = "10.1"
-        shortest_path = self.graph.find_shortest_path(src, dest_building)
+        shortest_path, dist = self.graph.find_shortest_path(src, dest_building)
         dest = shortest_path[-1]
 
         self.assertEqual(expected_path, shortest_path)
@@ -161,7 +161,7 @@ class DijkstraTests(unittest.TestCase):
 
         expected_path = ["4.4", "4.3", "4.2", "4.1", "2.4"]
         expected_dest = "2.4"
-        shortest_path = self.graph.find_shortest_path(src, dest_building)
+        shortest_path, dist = self.graph.find_shortest_path(src, dest_building)
         dest = shortest_path[-1]
 
         self.assertEqual(expected_path, shortest_path)
@@ -173,7 +173,7 @@ class DijkstraTests(unittest.TestCase):
 
         expected_path = ["10.2", "10.1", "3.4", "3.3", "3.2", "3.1", "1.4"]
         expected_dest = "1.4"
-        shortest_path = self.graph.find_shortest_path(src, dest_building)
+        shortest_path, dist = self.graph.find_shortest_path(src, dest_building)
         dest = shortest_path[-1]
 
         self.assertEqual(expected_path, shortest_path)
