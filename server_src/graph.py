@@ -11,6 +11,7 @@ from queue import PriorityQueue
 
 NODES_CSV_FILE_PATH = "./nodes.csv"
 POLYGONS_CSV_FILE_PATH = "./polygons.csv"
+EDGES_CSV_FILE_PATH = "./edges.csv"
 EDGES_JSON_FILE_PATH = "./edges.json"
 
 
@@ -26,10 +27,10 @@ class Location:
 
 class Node:
 
-    def __init__(self, id: str, location: Location, building: int):
+    def __init__(self, id: str, location: Location, building_name: Optional[str]):
         self.id = id
         self.location = location
-        self.building = building
+        self.building = building_name
 
     def __repr__(self):
         return f"Node({self.id}, {self.location}, {self.building})"
@@ -52,7 +53,7 @@ class Edge:
         point_2 = self.v2.location
 
         delta_y = point_2.lat - point_1.lat
-        delta_x = point_2.lon - point_2.lon
+        delta_x = point_2.lon - point_1.lon
 
         return math.atan(delta_y) / delta_x
 
@@ -60,18 +61,24 @@ class Edge:
 class Graph:
 
     def __init__(self):
-        self._vertices: Dict[str, Node] = dict()   # id -> node
-        self.buildings: Dict[int, Set[str]] = dict()  # building -> id
+        self._vertices: Dict[str, Node] = dict()   # node_id -> node
+        self.buildings: Dict[str, Set[str]] = dict()  # building -> node_id
         self.adj: Dict[str, Dict[str, float]] = dict()  # adj matrix with weights {node_id: {node_id: weight}}
 
-    def contains_building(self, building) -> bool:
-        return building in self.buildings
+    def contains_building(self, building_name: str) -> bool:
+        return building_name in self.buildings
 
     def contains_node(self, node_id: str) -> bool:
         """
         Checks if graph contains node
         """
         return node_id in self._vertices
+
+    def contains_edge(self, v1_id: str, v2_id: str) -> bool:
+        """
+        Checks if graph contains edge
+        """
+        return v1_id in self.adj and v2_id in self.adj[v1_id]
 
     def add_node(self, node: Node):
         """
@@ -85,32 +92,20 @@ class Graph:
 
         self.buildings[node.building].add(node.id)
 
-    def get_node(self, node_id: str) -> Node:
-        """
-        Returns the node object for a node_id
-        """
-        return self._vertices[node_id]
-
-    def get_neighbors(self, node_id: str) -> List[str]:
-        """
-        Given src node returns list of neighbor node ids
-        """
-        return list(self.adj[node_id].keys())
-
-    def contains_edge(self, v1_id: str, v2_id: str) -> bool:
-        """
-        Checks if graph contains edge
-        """
-        return v1_id in self.adj and v2_id in self.adj[v1_id]
-
     def add_edge(self, v1_id: str, v2_id: str):
         """
         Adds undirected edge (v1, v2) to graph representation
         """
         edge = self.get_edge(v1_id, v2_id)
-        
+
         self.adj[v1_id][v2_id] = edge.weight
         self.adj[v2_id][v1_id] = edge.weight
+
+    def get_node(self, node_id: str) -> Node:
+        """
+        Returns the node object for a node_id
+        """
+        return self._vertices[node_id]
 
     def get_edge(self, v1_id: str, v2_id: str) -> Edge:
         v1 = self._vertices[v1_id]
@@ -118,17 +113,40 @@ class Graph:
         edge = Edge(v1, v2)
         return edge
 
-    def get_nodes_by_building(self, building: int) -> Set[str]:
+    def get_neighbors(self, node_id: str) -> List[str]:
+        """
+        Given src node returns list of neighbor node ids
+        """
+        return list(self.adj[node_id].keys())
+
+    def get_nodes_by_building(self, building_name: str) -> Set[str]:
         """
         Returns a list of node ids in building
         """
-        return self.buildings[building]
+        return self.buildings[building_name]
 
     def get_node_ids(self):
         return [key for key in self._vertices]
 
     def get_weight(self, v1_id: str, v2_id: str):
         return self.adj[v1_id][v2_id]
+
+    def get_closest_node(self, point: Location) -> str:
+        """
+        Given location, find closest node in the graph. This will be used to as the start node when calculating the
+        shortest path from a location
+        """
+        src = Node("s", point, None)
+
+        min_dist = float('inf')
+        closest_node = None
+        for v in self._vertices.values():
+            edge = Edge(src, v)
+            if edge.weight < min_dist:
+                min_dist = edge.weight
+                closest_node = v
+
+        return closest_node.id
 
     def sssp(self, src: str):
         """
@@ -165,7 +183,8 @@ class Graph:
 
         return dist, parent
 
-    def parse_sssp_parent(self, parent: Dict[str, str], dest: str):
+    @staticmethod
+    def parse_sssp_parent(parent: Dict[str, str], dest: str):
         """
         Takes in parent pointer dictionary (result of single source shortest path algorithm) and returns a list of
         node ids representing the shortest path to destination.
@@ -178,13 +197,13 @@ class Graph:
         path.append(current_node)
         return path[::-1]
 
-    def find_shortest_path(self, src: str, building: int) -> Tuple[List[str], float]:
+    def find_shortest_path(self, src: str, building_name: str) -> Tuple[List[str], float]:
         assert self.contains_node(src)
-        assert self.contains_building(building)
+        assert self.contains_building(building_name)
 
         dist, parent = self.sssp(src)
 
-        nodes_in_building = self.get_nodes_by_building(building)
+        nodes_in_building = self.get_nodes_by_building(building_name)
         destination = None
         min_dist = float('inf')
         for v in nodes_in_building:
@@ -193,23 +212,6 @@ class Graph:
                 destination = v
 
         return self.parse_sssp_parent(parent, destination), min_dist
-
-    def find_closest_node(self, point: Location) -> str:
-        """
-        Given location, find closest node in the graph. This will be used to as the start node when calculating the
-        shortest path from a location
-        """
-        src = Node("s", point, -1)
-
-        min_dist = float('inf')
-        closest_node = None
-        for v in self._vertices.values():
-            edge = Edge(src, v)
-            if edge.weight < min_dist:
-                min_dist = edge.weight
-                closest_node = v
-
-        return closest_node.id
 
 
 class Polygon:
@@ -271,9 +273,9 @@ class Polygon:
         return f"{self.vertices}"
 
 
-def parse_polygons(polygons_csv_file_path: str) -> Dict[int, Polygon]:
+def parse_polygons(polygons_csv_file_path: str) -> Dict[str, Polygon]:
     """
-    Returns dictionary mapping building number to polygon representation of building.py
+    Returns dictionary mapping building name to polygon representation of building
 
     CSV structure is assumes to be <Polygon str>, <building num>, <description>
     """
@@ -286,7 +288,7 @@ def parse_polygons(polygons_csv_file_path: str) -> Dict[int, Polygon]:
                 line_count += 1
                 continue
 
-            raw_polygon_str, building_num, _ = row
+            raw_polygon_str, building, _ = row
             vertices_str = raw_polygon_str[10: -2]
             raw_vertices = vertices_str.split(",")
 
@@ -296,13 +298,13 @@ def parse_polygons(polygons_csv_file_path: str) -> Dict[int, Polygon]:
                 vertex = Location(lat=float(lat), lon=float(lon))
                 vertices.append(vertex)
 
-            polygons[int(building_num)] = Polygon(vertices)
+            polygons[building] = Polygon(vertices)
             line_count += 1
 
     return polygons
 
 
-def parse_nodes(nodes_csv_file_path: str, polygons: Dict[int, Polygon]) -> List[Node]:
+def parse_nodes(nodes_csv_file_path: str, polygons: Dict[str, Polygon]) -> List[Node]:
     """
     CSV structure is assumes to be <location str>, <building num>, <description>
     """
@@ -327,34 +329,48 @@ def parse_nodes(nodes_csv_file_path: str, polygons: Dict[int, Polygon]) -> List[
                     building = key
                     break
 
-            node = Node(id=node_name, location=location, building=building)
+            node = Node(id=node_name, location=location, building_name=building)
             nodes.append(node)
             line_count += 1
 
     return nodes
 
 
-def parse_edges(edges_json_file_path: str) -> List[Tuple[int, int]]:
-    """
-    Takes in an adjacency list representation of the graph as a JSON file and converts to a list of edges
-    """
+def parse_edges(edges_csv_file_path: str, nodes: List[Node]) -> List[Tuple[str, str]]:
 
-    edges = set()
-    with open(edges_json_file_path) as edges_json_file:
-        edges_json = json.load(edges_json_file)
+    locations_to_node_ids = dict()
+    for node in nodes:
+        locations_to_node_ids[node.location.values] = node.id
 
-        for v1_id, adj_nodes in edges_json.items():
-            for v2_id in adj_nodes:
-                if (v1_id, v2_id) in edges or (v2_id, v1_id) in edges:
-                    continue
+    edges = []
+    with open(edges_csv_file_path) as edges_csv:
+        csv_reader = csv.reader(edges_csv, delimiter=',')
+        line_count = 0
+        for row in csv_reader:
+            if line_count == 0:
+                line_count += 1
+                continue
 
-                edge = (v1_id, v2_id)
-                edges.add(edge)
+            raw_line_str, _, _ = row
+            line_str = raw_line_str[12: -1]
+            raw_points = line_str.split(",")
 
-    return list(edges)
+            for i in range(len(raw_points)-1):
+                lat_1, lon_1 = [float(val) for val in raw_points[i].split()]
+                lat_2, lon_2 = [float(val) for val in raw_points[i+1].split()]
+
+                node_1_id = locations_to_node_ids[(lat_1, lon_1)]
+                node_2_id = locations_to_node_ids[(lat_2, lon_2)]
+
+                edge = (node_1_id, node_2_id)
+                edges.append(edge)
+
+            line_count += 1
+
+    return edges
 
 
-def create_graph(nodes: List[Node], edges: List[Tuple[int, int]]) -> Graph:
+def create_graph(nodes: List[Node], edges: List[Tuple[str, str]]) -> Graph:
     """
     Hard coded list of edges where each edge is a pair of node ids
     """
@@ -377,7 +393,7 @@ def create_graph(nodes: List[Node], edges: List[Tuple[int, int]]) -> Graph:
     return graph
 
 
-def get_current_building(polygons: Dict[int, Polygon], point: Location) -> Optional[int]:
+def get_current_building(polygons: Dict[str, Polygon], point: Location) -> Optional[int]:
     building_num = None
     for building, polygon in polygons.items():  # loop thru all the polygons we got from polygons.csv
         if polygon.is_within_area(point):
@@ -385,6 +401,7 @@ def get_current_building(polygons: Dict[int, Polygon], point: Location) -> Optio
             break
 
     return building_num
+
 
 def calculate_eta(distance: float, avg_velocity: float = 1.34112):
     """
@@ -397,7 +414,7 @@ def calculate_eta(distance: float, avg_velocity: float = 1.34112):
 if __name__ == "__main__":
     polygons = parse_polygons(POLYGONS_CSV_FILE_PATH)
     nodes = parse_nodes(NODES_CSV_FILE_PATH, polygons)
-    edges = parse_edges(EDGES_JSON_FILE_PATH)
+    edges = parse_edges(EDGES_CSV_FILE_PATH, nodes)
 
     graph = create_graph(nodes, edges)
 
@@ -409,16 +426,20 @@ if __name__ == "__main__":
     pprint.pprint(nodes)
     print("---------")
 
+    print("Edges:")
+    pprint.pprint(edges)
+    print("---------")
+
     print("Weighted Adjacency List:")
     pprint.pprint(graph.adj)
     print("---------")
 
     print("Path Finding:")
-    print(graph.find_shortest_path("7.1", 2))
+    print(graph.find_shortest_path("7.1", "2"))
     print("---------")
 
     test = Location(lon=42.358478, lat=-71.092197)
-    print(graph.find_closest_node(test))
+    print(graph.get_closest_node(test))
     dict_of_polys = parse_polygons(POLYGONS_CSV_FILE_PATH)
     building = get_current_building(dict_of_polys, test)
     print(building)

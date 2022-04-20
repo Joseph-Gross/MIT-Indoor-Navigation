@@ -1,7 +1,8 @@
 import unittest
+import csv
 
 from server_src import graph as graph_utils
-from server_src.graph import EDGES_JSON_FILE_PATH, POLYGONS_CSV_FILE_PATH, NODES_CSV_FILE_PATH
+from server_src.graph import EDGES_CSV_FILE_PATH, POLYGONS_CSV_FILE_PATH, NODES_CSV_FILE_PATH
 
 
 class PolygonTests(unittest.TestCase):
@@ -13,11 +14,11 @@ class PolygonTests(unittest.TestCase):
         Tests
 
         """
-        expected_num_polygons = 9
+        expected_num_polygons = 11
         num_polygons = len(self.polygons)
         self.assertEqual(expected_num_polygons, num_polygons)
 
-        expected_buildings = [1, 2, 3, 4, 5, 7, 8, 10, 11]
+        expected_buildings = ["1", "2", "3", "4", "5", "6", "7", "8", "10", "11", "kc"]
         for building in self.polygons.keys():
             self.assertTrue(building in expected_buildings, f"{building=} not expected")
 
@@ -27,15 +28,15 @@ class PolygonTests(unittest.TestCase):
         """
         expected_vertices_building_10 = [
             graph_utils.Location(lat=-71.0923882, lon=42.3598751),
-            graph_utils.Location(-71.0921938, 42.359552),
-            graph_utils.Location(-71.0922188, 42.3595396),
-            graph_utils.Location(-71.0921294, 42.3593786),
-            graph_utils.Location(-71.09166, 42.3595362),
-            graph_utils.Location(-71.0919564, 42.3600188),
-            graph_utils.Location(-71.0923882, 42.3598751)
+            graph_utils.Location(lat=-71.0921938, lon=42.359552),
+            graph_utils.Location(lat=-71.0922188, lon=42.3595396),
+            graph_utils.Location(lat=-71.0921294, lon=42.3593786),
+            graph_utils.Location(lat=-71.09166, lon=42.3595362),
+            graph_utils.Location(lat=-71.0919564, lon=42.3600188),
+            graph_utils.Location(lat=-71.0923882, lon=42.3598751)
         ]
 
-        building_10 = self.polygons[10]
+        building_10 = self.polygons["10"]
         
         self.assertEqual(len(expected_vertices_building_10), len(building_10.vertices))
         
@@ -52,7 +53,9 @@ class NodeTests(unittest.TestCase):
         self.assertEqual(len(unique_node_ids), len(self.nodes))
         
     def test_nodes_parse_without_polygons(self):
-        expected_num_nodes = 25
+        nodes_csv = open(NODES_CSV_FILE_PATH)
+        csv_reader = csv.reader(nodes_csv)
+        expected_num_nodes = len(list(csv_reader)) - 1
 
         self.assertEqual(expected_num_nodes, len(self.nodes))
     
@@ -61,13 +64,14 @@ class NodeTests(unittest.TestCase):
         nodes = graph_utils.parse_nodes(NODES_CSV_FILE_PATH, polygons)
         
         for node in nodes:
-            expected_building_num = int(node.id.split('.')[0])
+            expected_building_num = node.id.split('.')[0]
             self.assertEqual(expected_building_num, node.building)
 
 
 class EdgeTests(unittest.TestCase):
     def setUp(self):
-        self.edges = graph_utils.parse_edges(EDGES_JSON_FILE_PATH)
+        nodes = graph_utils.parse_nodes(NODES_CSV_FILE_PATH, polygons={})
+        self.edges = graph_utils.parse_edges(EDGES_CSV_FILE_PATH, nodes)
 
     def test_edges_unique(self):
         unique_edges = set(self.edges)
@@ -79,7 +83,7 @@ class GraphTests(unittest.TestCase):
     def setUp(self):
         polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
         nodes = graph_utils.parse_nodes(NODES_CSV_FILE_PATH, polygons)
-        edges = graph_utils.parse_edges(EDGES_JSON_FILE_PATH)
+        edges = graph_utils.parse_edges(EDGES_CSV_FILE_PATH, nodes)
         self.graph = graph_utils.create_graph(nodes, edges)
 
 
@@ -87,7 +91,7 @@ class DijkstraTests(unittest.TestCase):
     def setUp(self):
         polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
         nodes = graph_utils.parse_nodes(NODES_CSV_FILE_PATH, polygons)
-        edges = graph_utils.parse_edges(EDGES_JSON_FILE_PATH)
+        edges = graph_utils.parse_edges(EDGES_CSV_FILE_PATH, nodes)
         self.graph = graph_utils.create_graph(nodes, edges)
 
     def test_shortest_path_0(self):
@@ -105,7 +109,7 @@ class DijkstraTests(unittest.TestCase):
         src = "3.1"
         dest = "4.3"
 
-        expected_path = ["3.1", "4.1", "4.2", "4.3"]
+        expected_path = ["3.1", "kc.2", "4.1", "4.2", "4.3"]
         dist, parent = self.graph.sssp(src)
         shortest_path = self.graph.parse_sssp_parent(parent, dest)
 
@@ -125,7 +129,7 @@ class DijkstraTests(unittest.TestCase):
         src = "11.1"
         dest = "2.1"
 
-        expected_path = ["11.1", "3.3", "3.2", "3.1", "2.1"]
+        expected_path = ["11.1", "3.3", "3.2", "3.1", "kc.2", "2.1"]
         dist, parent = self.graph.sssp(src)
         shortest_path = self.graph.parse_sssp_parent(parent, dest)
 
@@ -133,9 +137,9 @@ class DijkstraTests(unittest.TestCase):
 
     def test_shortest_path_to_building_0(self):
         src = "3.1"
-        dest_building = 2  # Building number
+        dest_building = "2"  # Building number
 
-        expected_path = ["3.1", "4.1", "2.4"]
+        expected_path = ["3.1", "kc.2", "4.1", "2.4"]
         expected_dest = "2.4"
         shortest_path, dist = self.graph.find_shortest_path(src, dest_building)
         dest = shortest_path[-1]
@@ -145,7 +149,7 @@ class DijkstraTests(unittest.TestCase):
     
     def test_shortest_path_to_building_1(self):
         src = "1.1"
-        dest_building = 10  # Building number
+        dest_building = "10"  # Building number
 
         expected_path = ["1.1", "3.1", "3.2", "3.3", "3.4", "10.1"]
         expected_dest = "10.1"
@@ -157,7 +161,7 @@ class DijkstraTests(unittest.TestCase):
     
     def test_shortest_path_to_building_2(self):
         src = "4.4"
-        dest_building = 2  # Building number
+        dest_building = "2"  # Building number
 
         expected_path = ["4.4", "4.3", "4.2", "4.1", "2.4"]
         expected_dest = "2.4"
@@ -169,7 +173,7 @@ class DijkstraTests(unittest.TestCase):
     
     def test_shortest_path_to_building_3(self):
         src = "10.2"
-        dest_building = 1  # Building number
+        dest_building = "1"  # Building number
 
         expected_path = ["10.2", "10.1", "3.4", "3.3", "3.2", "3.1", "1.4"]
         expected_dest = "1.4"
