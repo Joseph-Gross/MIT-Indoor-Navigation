@@ -24,19 +24,25 @@ const uint8_t BUTTON = 45;
 const int MAX_APS = 5;
 
 /* Global variables*/
-uint8_t button_state;       // used for containing button state and detecting edges
-int old_button_state;       // used for detecting button edges
-uint32_t time_since_sample; // used for microsecond timing
+uint8_t button_state;          // used for containing button state and detecting edges
+uint8_t previous_button_state; // used for detecting button edges
+uint32_t time_since_sample;    // used for microsecond timing
 
 WiFiClientSecure client; // global WiFiClient Secure object
 WiFiClient client2;      // global WiFiClient Secure object
 
-uint8_t state;
+uint8_t enter_dest_state;
+uint8_t navigation_state;
+
+const uint8_t STARTSCREEN = 0;
+const uint8_t SELECT_DEST = 1;
+const uint8_t CONFIRM_DEST = 2;
+const uint8_t NAVIGATE = 3;
 
 const uint8_t IDLE = 0;
 const uint8_t ROUTING = 1;
 const uint8_t FINDING_PATH = 2;
-const uint8_t ARRIVED = 3;
+const uint8_t DISPLAY_DIRECTIONS = 3;
 
 // choose one:
 
@@ -44,7 +50,7 @@ const uint8_t ARRIVED = 3;
 // const char PASSWORD[] = "";
 //
 //
-const char NETWORK[] = "EECS_Labs";
+const char NETWORK[] = "MIT GUEST";
 const char PASSWORD[] = "";
 //
 // const char NETWORK[] = "608_24G";
@@ -340,11 +346,12 @@ void setup()
     }
     timer = millis();
     get_loc_timer = millis();
+    enter_dest_state = STARTSCREEN;
 }
 
 void navigate_loop()
 {
-    if (millis() - get_loc_timer >= 2000)
+    if (millis() - get_loc_timer >= 5000)
     { // every 2 seconds, get the user's location
         int offset = sprintf(json_body, "%s", PREFIX);
         int n = WiFi.scanNetworks(); // run a new scan. could also modify to use original scan from setup so quicker (though older info)
@@ -410,7 +417,8 @@ void navigate_loop()
         request[0] = '\0';
         response[0] = '\0';
 
-        sprintf(request, "GET https://608dev-2.net/sandbox/sc/team8/server_src/request_handler.py?lat=%lf&lon=%lf  HTTP/1.1\r\n", latitude, longitude);
+        // !!!! fix this!!!!
+        sprintf(request, "GET https://608dev-2.net/sandbox/sc/team8/server_src/request_handler.py?lat=%lf&lon=%lf  HTTP/1.1\r\n", longitude, latitude);
         strcat(request, "Host: 608dev-2.net\r\n");
         strcat(request, "\r\n");
 
@@ -430,9 +438,46 @@ void navigate_loop()
 void loop()
 {
     button_state = digitalRead(BUTTON);
-    bool in_navigate = true;
-    if (in_navigate == true)
-    { // if we are currently navigating, run navigate loop
+
+    switch (enter_dest_state)
+    {
+    case STARTSCREEN:
+        tft.cursor(0, 10, 3);
+        tft.fillScreen(TFT_BLACK);
+        tft.printf("Input Valid Building"); // change building to classroom later (or give option of either classroom or building)
+
+        // if (previous_button_state == 0 && button_state == 1){ // button just clicked
+        //   enter_dest_state = SELECT_DEST;
+        // }
+        enter_dest_state = SELECT_DEST;
+        break;
+    case SELECT_DEST:
+        // here's where wiki input selection will go
+        if (previous_button_state == 0 && button_state == 1)
+        { // button just clicked, now we will make sure that building is valid
+            enter_dest_state = CONFIRM_DEST;
+        }
+        break;
+    case CONFIRM_DEST:
+        // check if building is valid, if yes, continue to navigation, if no, go back to STARTSCREEN to redisplay starting display
+        if (true)
+        { // right now, we are just gonna assume all inputs are a valid building
+            enter_dest_state = NAVIGATE;
+        }
+
+        break;
+    case NAVIGATE:
+        // within here, we will have another state machine which handles actually navigating the user
+        // once the user reaches their destination, we will change navigation_state back to IDLE
+        // and enter_dest_state back to STARTSCREEN
         navigate_loop();
+        break;
     }
+
+    // bool in_navigate = true;
+    // if(in_navigate == true){ // if we are currently navigating, run navigate loop
+    //   navigate_loop();
+    // }
+
+    previous_button_state = button_state;
 }
