@@ -4,6 +4,7 @@ from typing import Dict, Set, List, Optional, Tuple
 import csv
 import json
 import pprint
+import math
 
 from geopy import distance
 from queue import PriorityQueue
@@ -40,16 +41,27 @@ class Edge:
         self.v1 = v1
         self.v2 = v2
         self.weight = self._calculate_distance()
+        self.direction = self._calculate_direction()
 
     def _calculate_distance(self) -> distance.distance.meters:
         return distance.distance(self.v1.location.values, self.v2.location.values).meters
+
+    def _calculate_direction(self) -> float:
+
+        point_1 = self.v1.location
+        point_2 = self.v2.location
+
+        delta_y = point_2.lat - point_1.lat
+        delta_x = point_2.lon - point_2.lon
+
+        return math.atan(delta_y) / delta_x
 
 
 class Graph:
 
     def __init__(self):
         self._vertices: Dict[str, Node] = dict()   # id -> node
-        self.buildings: Dict[int, Set[int]] = dict()  # building -> id
+        self.buildings: Dict[int, Set[str]] = dict()  # building -> id
         self.adj: Dict[str, Dict[str, float]] = dict()  # adj matrix with weights {node_id: {node_id: weight}}
 
     def contains_building(self, building) -> bool:
@@ -106,7 +118,7 @@ class Graph:
         edge = Edge(v1, v2)
         return edge
 
-    def get_nodes_by_building(self, building: int) -> Set[int]:
+    def get_nodes_by_building(self, building: int) -> Set[str]:
         """
         Returns a list of node ids in building
         """
@@ -166,7 +178,7 @@ class Graph:
         path.append(current_node)
         return path[::-1]
 
-    def find_shortest_path(self, src: str, building: int):
+    def find_shortest_path(self, src: str, building: int) -> Tuple[List[str], float]:
         assert self.contains_node(src)
         assert self.contains_building(building)
 
@@ -180,7 +192,7 @@ class Graph:
                 min_dist = dist[v]
                 destination = v
 
-        return self.parse_sssp_parent(parent, destination)
+        return self.parse_sssp_parent(parent, destination), min_dist
 
     def find_closest_node(self, point: Location) -> str:
         """
@@ -365,6 +377,23 @@ def create_graph(nodes: List[Node], edges: List[Tuple[int, int]]) -> Graph:
     return graph
 
 
+def get_current_building(polygons: Dict[int, Polygon], point: Location) -> Optional[int]:
+    building_num = None
+    for building, polygon in polygons.items():  # loop thru all the polygons we got from polygons.csv
+        if polygon.is_within_area(point):
+            building_num = building
+            break
+
+    return building_num
+
+def calculate_eta(distance: float, avg_velocity: float = 1.34112):
+    """
+    Distance in meters, avg_velocity in m/s
+    """
+
+    return distance / avg_velocity
+
+
 if __name__ == "__main__":
     polygons = parse_polygons(POLYGONS_CSV_FILE_PATH)
     nodes = parse_nodes(NODES_CSV_FILE_PATH, polygons)
@@ -388,4 +417,9 @@ if __name__ == "__main__":
     print(graph.find_shortest_path("7.1", 2))
     print("---------")
 
+    test = Location(lon=42.358478, lat=-71.092197)
+    print(graph.find_closest_node(test))
+    dict_of_polys = parse_polygons(POLYGONS_CSV_FILE_PATH)
+    building = get_current_building(dict_of_polys, test)
+    print(building)
 
