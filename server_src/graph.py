@@ -10,15 +10,28 @@ import math
 from geopy import distance
 from queue import PriorityQueue
 
-POLYGONS_CSV_FILE_PATH = "data/polygons.csv"
 
-NODES_0_CSV_FILE_PATH = "data/nodes_0.csv"
-NODES_1_CSV_FILE_PATH = "data/nodes_1.csv"
-NODES_STAIRS_CSV_FILE_PATH = "data/nodes_stairs.csv"
-NODES_ELEVATORS_CSV_FILE_PATH = "data/nodes_elevators.csv"
+# # use these imports if working locally
+# POLYGONS_CSV_FILE_PATH = "data/polygons.csv"
 
-EDGES_0_CSV_FILE_PATH = "data/edges_0.csv"
-EDGES_1_CSV_FILE_PATH = "data/edges_1.csv"
+# NODES_0_CSV_FILE_PATH = "data/nodes_0.csv"
+# NODES_1_CSV_FILE_PATH = "data/nodes_1.csv"
+# NODES_STAIRS_CSV_FILE_PATH = "data/nodes_stairs.csv"
+# NODES_ELEVATORS_CSV_FILE_PATH = "data/nodes_elevators.csv"
+
+# EDGES_0_CSV_FILE_PATH = "data/edges_0.csv"
+# EDGES_1_CSV_FILE_PATH = "data/edges_1.csv"
+
+# these imports are used server side
+POLYGONS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/polygons.csv"
+
+NODES_0_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_0.csv"
+NODES_1_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_1.csv"
+NODES_STAIRS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_stairs.csv"
+NODES_ELEVATORS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_elevators.csv"
+
+EDGES_0_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/edges_0.csv"
+EDGES_1_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/edges_1.csv"
 
 
 class NodeType(Enum):
@@ -79,8 +92,9 @@ class Graph:
         self._vertices: Dict[str, Node] = dict()   # node_id -> node
         self.buildings: Dict[str, Set[str]] = dict()  # building -> node_id
         self.floors: Dict[int, Set[str]] = dict()  # floor -> node_id
-        self.types: Dict[NodeType, Set[str]] = dict() # NodeType -> node_id
-        self.adj: Dict[str, Dict[str, float]] = dict()  # adj matrix with weights {node_id: {node_id: weight}}
+        self.types: Dict[NodeType, Set[str]] = dict()  # NodeType -> node_id
+        # adj matrix with weights {node_id: {node_id: weight}}
+        self.adj: Dict[str, Dict[str, float]] = dict()
 
     def contains_floor(self, floor: int) -> bool:
         return floor in self.floors
@@ -372,7 +386,8 @@ def parse_nodes(nodes_csv_file_path: str, polygons: Dict[str, Polygon], floor: O
             node_name.insert(1, str(floor))
             node_name.append(node_type.value)
             node_id = ".".join(node_name)
-            node = Node(id=node_id, location=location, building_name=building, floor=floor, node_type=node_type)
+            node = Node(id=node_id, location=location,
+                        building_name=building, floor=floor, node_type=node_type)
             nodes.append(node)
             line_count += 1
 
@@ -449,7 +464,8 @@ def create_graph(nodes: List[Node], edges: List[Tuple[str, str]], num_floors: in
             node_id[1] = str(floor)
             node_id = ".".join(node_id)
 
-            node_to_add = Node(node_id, node.location, floor, node.building, node.node_type)
+            node_to_add = Node(node_id, node.location, floor,
+                               node.building, node.node_type)
             nodes_to_add.append(node_to_add)
 
             closest_node_id = graph.get_closest_node(node.location, floor)
@@ -492,8 +508,10 @@ def calculate_eta(distance: float, avg_velocity: float = 1.34112):
 
 def create_all_graph_components():
     polygons = parse_polygons(POLYGONS_CSV_FILE_PATH)
-    nodes_stairs = parse_nodes(NODES_STAIRS_CSV_FILE_PATH, polygons, None, NodeType.STAIR)
-    nodes_elevators = parse_nodes(NODES_ELEVATORS_CSV_FILE_PATH, polygons, None, NodeType.ELEVATOR)
+    nodes_stairs = parse_nodes(
+        NODES_STAIRS_CSV_FILE_PATH, polygons, None, NodeType.STAIR)
+    nodes_elevators = parse_nodes(
+        NODES_ELEVATORS_CSV_FILE_PATH, polygons, None, NodeType.ELEVATOR)
     nodes_0 = parse_nodes(NODES_0_CSV_FILE_PATH, polygons, 0)
     nodes_1 = parse_nodes(NODES_1_CSV_FILE_PATH, polygons, 1)
 
@@ -508,8 +526,10 @@ def create_all_graph_components():
 
 if __name__ == "__main__":
     polygons = parse_polygons(POLYGONS_CSV_FILE_PATH)
-    nodes_stairs = parse_nodes(NODES_STAIRS_CSV_FILE_PATH, polygons, None, NodeType.STAIR)
-    nodes_elevators = parse_nodes(NODES_ELEVATORS_CSV_FILE_PATH, polygons, None, NodeType.ELEVATOR)
+    nodes_stairs = parse_nodes(
+        NODES_STAIRS_CSV_FILE_PATH, polygons, None, NodeType.STAIR)
+    nodes_elevators = parse_nodes(
+        NODES_ELEVATORS_CSV_FILE_PATH, polygons, None, NodeType.ELEVATOR)
     nodes_0 = parse_nodes(NODES_0_CSV_FILE_PATH, polygons, 0)
     nodes_1 = parse_nodes(NODES_1_CSV_FILE_PATH, polygons, 1)
 
@@ -545,4 +565,3 @@ if __name__ == "__main__":
     dict_of_polys = parse_polygons(POLYGONS_CSV_FILE_PATH)
     building = get_current_building(dict_of_polys, test)
     print(building)
-
