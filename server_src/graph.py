@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 from typing import Dict, Set, List, Optional, Tuple
 
 import csv
@@ -9,10 +10,22 @@ import math
 from geopy import distance
 from queue import PriorityQueue
 
-NODES_CSV_FILE_PATH = "./nodes.csv"
-POLYGONS_CSV_FILE_PATH = "./polygons.csv"
-EDGES_CSV_FILE_PATH = "./edges.csv"
-EDGES_JSON_FILE_PATH = "./edges.json"
+POLYGONS_CSV_FILE_PATH = "data/polygons.csv"
+
+NODES_0_CSV_FILE_PATH = "data/nodes_0.csv"
+NODES_1_CSV_FILE_PATH = "data/nodes_1.csv"
+NODES_STAIRS_CSV_FILE_PATH = "data/nodes_stairs.csv"
+NODES_ELEVATORS_FILE_PATH = "data/nodes_elevators.csv"
+
+EDGES_0_CSV_FILE_PATH = "data/edges_0.csv"
+EDGES_1_CSV_FILE_PATH = "data/edges_1.csv"
+
+
+class NodeTypes(Enum):
+    TUNNEL = "level_0"
+    FIRST_FLOOR = "level_1"
+    ELEVATOR = "elevator"
+    STAIR = "stair"
 
 
 @dataclass
@@ -27,13 +40,14 @@ class Location:
 
 class Node:
 
-    def __init__(self, id: str, location: Location, building_name: Optional[str]):
+    def __init__(self, id: str, location: Location, floor: int, building_name: Optional[str]):
         self.id = id
         self.location = location
         self.building = building_name
+        self.floor = floor
 
     def __repr__(self):
-        return f"Node({self.id}, {self.location}, {self.building})"
+        return f"Node({self.id}, {self.location}, {self.floor}, {self.building})"
 
 
 class Edge:
@@ -63,7 +77,11 @@ class Graph:
     def __init__(self):
         self._vertices: Dict[str, Node] = dict()   # node_id -> node
         self.buildings: Dict[str, Set[str]] = dict()  # building -> node_id
+        self.floors: Dict[int, Set[str]] = dict()  # floor -> node_id
         self.adj: Dict[str, Dict[str, float]] = dict()  # adj matrix with weights {node_id: {node_id: weight}}
+
+    def contains_floor(self, floor: int) -> bool:
+        return floor in self.floors
 
     def contains_building(self, building_name: str) -> bool:
         return building_name in self.buildings
@@ -90,7 +108,11 @@ class Graph:
         if not self.contains_building(node.building):
             self.buildings[node.building] = set()
 
+        if not self.contains_floor(node.floor):
+            self.floors[node.floor] = set()
+
         self.buildings[node.building].add(node.id)
+        self.floors[node.floor].add(node.id)
 
     def add_edge(self, v1_id: str, v2_id: str):
         """
@@ -125,22 +147,26 @@ class Graph:
         """
         return self.buildings[building_name]
 
+    def get_nodes_by_floor(self, floor: int) -> Set[str]:
+        return self.floors[floor]
+
     def get_node_ids(self):
         return [key for key in self._vertices]
 
     def get_weight(self, v1_id: str, v2_id: str):
         return self.adj[v1_id][v2_id]
 
-    def get_closest_node(self, point: Location) -> str:
+    def get_closest_node(self, point: Location, floor: int) -> str:
         """
         Given location, find closest node in the graph. This will be used to as the start node when calculating the
         shortest path from a location
         """
-        src = Node("s", point, None)
+        src = Node("s", point, floor, None)
 
         min_dist = float('inf')
         closest_node = None
-        for v in self._vertices.values():
+        for v_id in self.get_nodes_by_floor(floor):
+            v = self.get_node(v_id)
             edge = Edge(src, v)
             if edge.weight < min_dist:
                 min_dist = edge.weight
@@ -304,7 +330,7 @@ def parse_polygons(polygons_csv_file_path: str) -> Dict[str, Polygon]:
     return polygons
 
 
-def parse_nodes(nodes_csv_file_path: str, polygons: Dict[str, Polygon]) -> List[Node]:
+def parse_nodes(nodes_csv_file_path: str, polygons: Dict[str, Polygon], floor: int) -> List[Node]:
     """
     CSV structure is assumes to be <location str>, <building num>, <description>
     """
@@ -329,7 +355,10 @@ def parse_nodes(nodes_csv_file_path: str, polygons: Dict[str, Polygon]) -> List[
                     building = key
                     break
 
-            node = Node(id=node_name, location=location, building_name=building)
+            node_name = node_name.split(".")
+            node_name.insert(1, str(floor))
+            node_id = ".".join(node_name)
+            node = Node(id=node_id, location=location, building_name=building, floor=floor)
             nodes.append(node)
             line_count += 1
 
@@ -413,9 +442,14 @@ def calculate_eta(distance: float, avg_velocity: float = 1.34112):
 
 if __name__ == "__main__":
     polygons = parse_polygons(POLYGONS_CSV_FILE_PATH)
-    nodes = parse_nodes(NODES_CSV_FILE_PATH, polygons)
-    edges = parse_edges(EDGES_CSV_FILE_PATH, nodes)
+    nodes_0 = parse_nodes(NODES_0_CSV_FILE_PATH, polygons, 0)
+    nodes_1 = parse_nodes(NODES_1_CSV_FILE_PATH, polygons, 1)
 
+    edges_0 = parse_edges(EDGES_0_CSV_FILE_PATH, nodes_0)
+    edges_1 = parse_edges(EDGES_1_CSV_FILE_PATH, nodes_1)
+
+    nodes = nodes_0 + nodes_1
+    edges = edges_0 + edges_1
     graph = create_graph(nodes, edges)
 
     print("Polygons:")
@@ -435,11 +469,11 @@ if __name__ == "__main__":
     print("---------")
 
     print("Path Finding:")
-    print(graph.find_shortest_path("7.1", "2"))
+    print(graph.find_shortest_path("7.1.1", "2"))
     print("---------")
 
     test = Location(lon=42.358478, lat=-71.092197)
-    print(graph.get_closest_node(test))
+    print(graph.get_closest_node(test, floor=1))
     dict_of_polys = parse_polygons(POLYGONS_CSV_FILE_PATH)
     building = get_current_building(dict_of_polys, test)
     print(building)
