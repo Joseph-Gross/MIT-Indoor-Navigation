@@ -1,9 +1,9 @@
-# import sys
-# sys.path.append('/var/jail/home/team8/server_src')
+import sys
+sys.path.append('/var/jail/home/team8/server_src')
 # POLYGONS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/polygons.csv"
 
-from server_src import graph as graph_utils
-
+# from server_src import graph as graph_utils
+import graph as graph_utils
 from dataclasses import dataclass, asdict
 
 
@@ -30,11 +30,11 @@ class Response:
 
 def try_parse_get_request(request) -> RequestValues:
     values = request.get("values")
-
-    assert "user_id" in "values", "Missing data: 'user_id'"
-    assert "lat" in "values", "Missing data: 'lat'"
-    assert "lon" in "values", "Missing data: 'lon'"
-    assert "dest" in "destination", "Missing data: 'destination'"
+    #return values
+    assert "user_id" in values, "Missing data: 'user_id'"
+    assert "lat" in values, "Missing data: 'lat'"
+    assert "lon" in values, "Missing data: 'lon'"
+    assert "dest" in values, "Missing data: 'destination'"
 
     user_id = values.get("user_id")
     lat = float(values.get("lat"))
