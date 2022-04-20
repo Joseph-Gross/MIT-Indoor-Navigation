@@ -85,7 +85,7 @@ class GraphTests(unittest.TestCase):
         polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
         nodes = graph_utils.parse_nodes(NODES_1_CSV_FILE_PATH, polygons, 1)
         edges = graph_utils.parse_edges(EDGES_1_CSV_FILE_PATH, nodes)
-        self.graph = graph_utils.create_graph(nodes, edges)
+        self.graph = graph_utils.create_graph(nodes, edges, num_floors=2)
 
 
 class DijkstraTests(unittest.TestCase):
@@ -93,7 +93,7 @@ class DijkstraTests(unittest.TestCase):
         polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
         nodes = graph_utils.parse_nodes(NODES_1_CSV_FILE_PATH, polygons, 1)
         edges = graph_utils.parse_edges(EDGES_1_CSV_FILE_PATH, nodes)
-        self.graph = graph_utils.create_graph(nodes, edges)
+        self.graph = graph_utils.create_graph(nodes, edges, num_floors=2)
 
     def test_shortest_path_0(self):
         src = "8.1.2.b"

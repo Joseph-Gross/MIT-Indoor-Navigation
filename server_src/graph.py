@@ -62,7 +62,7 @@ class Edge:
     def _calculate_distance(self) -> distance.distance.meters:
         return distance.distance(self.v1.location.values, self.v2.location.values).meters
 
-    def _calculate_direction(self) -> float:
+    def _calculate_direction(self) -> Optional[float]:
 
         point_1 = self.v1.location
         point_2 = self.v2.location
@@ -70,7 +70,7 @@ class Edge:
         delta_y = point_2.lat - point_1.lat
         delta_x = point_2.lon - point_1.lon
 
-        return math.atan(delta_y) / delta_x
+        return math.atan(delta_y) / delta_x if delta_x != 0 else None
 
 
 class Graph:
@@ -123,14 +123,14 @@ class Graph:
         self.floors[node.floor].add(node.id)
         self.types[node.node_type].add(node.id)
 
-    def add_edge(self, v1_id: str, v2_id: str):
+    def add_edge(self, v1_id: str, v2_id: str, weight: Optional[float] = None):
         """
         Adds undirected edge (v1, v2) to graph representation
         """
         edge = self.get_edge(v1_id, v2_id)
 
-        self.adj[v1_id][v2_id] = edge.weight
-        self.adj[v2_id][v1_id] = edge.weight
+        self.adj[v1_id][v2_id] = edge.weight if weight is None else weight
+        self.adj[v2_id][v1_id] = edge.weight if weight is None else weight
 
     def get_node(self, node_id: str) -> Node:
         """
@@ -168,7 +168,7 @@ class Graph:
     def get_weight(self, v1_id: str, v2_id: str):
         return self.adj[v1_id][v2_id]
 
-    def get_closest_node(self, point: Location, floor: int) -> str:
+    def get_closest_node(self, point: Location, floor: int, node_type: NodeType = NodeType.BUILDING) -> str:
         """
         Given location, find closest node in the graph. This will be used to as the start node when calculating the
         shortest path from a location
@@ -413,7 +413,7 @@ def parse_edges(edges_csv_file_path: str, nodes: List[Node]) -> List[Tuple[str, 
     return edges
 
 
-def create_graph(nodes: List[Node], edges: List[Tuple[str, str]]) -> Graph:
+def create_graph(nodes: List[Node], edges: List[Tuple[str, str]], num_floors: int) -> Graph:
     """
     Hard coded list of edges where each edge is a pair of node ids
     """
@@ -423,7 +423,6 @@ def create_graph(nodes: List[Node], edges: List[Tuple[str, str]]) -> Graph:
         if node.node_type == NodeType.BUILDING:
             graph.add_node(node)
             continue
-        graph.add_node(node)
 
     for v1_id, v2_id in edges:
         if not graph.contains_node(v1_id):
@@ -436,7 +435,39 @@ def create_graph(nodes: List[Node], edges: List[Tuple[str, str]]) -> Graph:
 
         graph.add_edge(v1_id, v2_id)
 
-    # TODO: Add elevator and stair edges to graph
+    # Handle Stair / Elevator Nodes
+    # For each stair / elevator node, add an node to each floor, add edge to losest node on eachh floor, and connect
+    # vertically with same "node" with default weight=20
+    for node in nodes:
+        if node.node_type == NodeType.BUILDING:
+            continue
+
+        nodes_to_add = []
+        edges_to_add = []
+        for floor in range(num_floors):
+            node_id = node.id.split(".")
+            node_id[1] = str(floor)
+            node_id = ".".join(node_id)
+
+            node_to_add = Node(node_id, node.location, floor, node.building, node.node_type)
+            nodes_to_add.append(node_to_add)
+
+            closest_node_id = graph.get_closest_node(node.location, floor)
+            edge = (node_id, closest_node_id)
+            edges_to_add.append(edge)
+
+        for node_to_add in nodes_to_add:
+            graph.add_node(node_to_add)
+
+        for edge in edges_to_add:
+            graph.add_edge(*edge)
+
+        # "Altitude" edges (up and down stairs/elevators)
+        for i in range(len(nodes_to_add)-1):
+            v1_id = nodes_to_add[i].id
+            v2_id = nodes_to_add[i+1].id
+
+            graph.add_edge(v1_id, v2_id, weight=20)
 
     return graph
 
@@ -457,6 +488,22 @@ def calculate_eta(distance: float, avg_velocity: float = 1.34112):
     """
 
     return distance / avg_velocity
+
+
+def create_all_graph_components():
+    polygons = parse_polygons(POLYGONS_CSV_FILE_PATH)
+    nodes_stairs = parse_nodes(NODES_STAIRS_CSV_FILE_PATH, polygons, None, NodeType.STAIR)
+    nodes_elevators = parse_nodes(NODES_ELEVATORS_CSV_FILE_PATH, polygons, None, NodeType.ELEVATOR)
+    nodes_0 = parse_nodes(NODES_0_CSV_FILE_PATH, polygons, 0)
+    nodes_1 = parse_nodes(NODES_1_CSV_FILE_PATH, polygons, 1)
+
+    edges_0 = parse_edges(EDGES_0_CSV_FILE_PATH, nodes_0)
+    edges_1 = parse_edges(EDGES_1_CSV_FILE_PATH, nodes_1)
+
+    nodes = nodes_stairs + nodes_elevators + nodes_0 + nodes_1
+    edges = edges_0 + edges_1
+    graph = create_graph(nodes, edges, num_floors=2)
+    return polygons, nodes, edges, graph
 
 
 if __name__ == "__main__":

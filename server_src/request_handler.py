@@ -3,8 +3,6 @@
 # POLYGONS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/polygons.csv"
 
 from server_src import graph as graph_utils
-from server_src.graph import EDGES_CSV_FILE_PATH, POLYGONS_CSV_FILE_PATH, NODES_CSV_FILE_PATH
-
 
 from dataclasses import dataclass, asdict
 
@@ -13,7 +11,7 @@ from dataclasses import dataclass, asdict
 class RequestValues:
     user_id: str
     point: graph_utils.Location
-    destination: int
+    destination: str
 
 
 @dataclass
@@ -41,7 +39,7 @@ def try_parse_get_request(request) -> RequestValues:
     user_id = values.get("user_id")
     lat = float(values.get("lat"))
     lon = float(values.get("lon"))
-    destination = int(values.get("destination"))
+    destination = values.get("destination")
 
     point = graph_utils.Location(lat=lat, lon=lon)
 
@@ -59,10 +57,7 @@ def request_handler(request):
     except ValueError:
         return "Both lat and lon must be valid coordinates"
 
-    polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
-    nodes = graph_utils.parse_nodes(NODES_CSV_FILE_PATH, polygons)
-    edges = graph_utils.parse_edges(EDGES_CSV_FILE_PATH)
-    graph = graph_utils.create_graph(nodes, edges)
+    polygons, nodes, edges, graph = graph_utils.create_all_graph_components()
 
     curr_node = graph.get_node(graph.get_closest_node(request_values.point))
     curr_building = graph_utils.get_current_building(polygons, request_values.point)
