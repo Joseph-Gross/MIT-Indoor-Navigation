@@ -47,7 +47,7 @@ def try_parse_get_request(request) -> RequestValues:
 
 
 def request_handler(request):
-    if request['method'] != "POST":
+    if request['method'] != "GET":
         return f"{request['method']} requests not allowed."
 
     try:
