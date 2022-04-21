@@ -37,7 +37,8 @@ def try_parse_get_request(request) -> RequestValues:
     assert "lat" in values, "Missing data: 'lat'"
     assert "lon" in values, "Missing data: 'lon'"
     assert "destination" in values, "Missing data: destination"
-    assert "floor" in values, "Missing data: floor"
+    assert "current_floor" in values, "Missing data: current_floor"
+    assert "destination_floor" in values, "Missing data: destination_floor"
 
     user_id = values.get("user_id")
     lat = float(values.get("lat"))
