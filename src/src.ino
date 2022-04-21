@@ -344,7 +344,175 @@ void setup()
         Serial.println(WiFi.status());
         ESP.restart(); // restart the ESP (proper way)
     }
+
+    Wire.begin();
+    Wire.setClock(400000);                            // 400 kbit/sec I2C speed
+    // while (!Serial);                                  // required for Feather M4 Express
+    // Serial.begin(115200);
+    // ----- Set up the interrupt pin, its set as active high, push-pull
+    pinMode(intPin, INPUT);
+    digitalWrite(intPin, LOW);
+    pinMode(myLed, OUTPUT);
+    digitalWrite(myLed, HIGH);
+    // ----- Display title
+    Serial.println(F("MPU-9250 Quaternion Compass"));
+    Serial.println("");
+    delay(2000);
+    // ----- Level surface message
+    Serial.println(F("Place the compass on a level surface"));
+    Serial.println("");
+    delay(2000);
+
+    // ----- Read the WHO_AM_I register, this is a good test of communication
+    byte c = readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);  // Read WHO_AM_I register for MPU-9250
+    delay(1000);
+    if ((c == 0x71) || (c == 0x73) || (c == 0x68)) // MPU9250=0x68; MPU9255=0x73
+    {
+      // Serial.println(F("MPU9250 is online..."));
+      // Serial.println("");
+      MPU9250SelfTest(SelfTest); // Start by performing self test and reporting values
+      // Serial.println(F("Self test (14% acceptable)"));
+      // Serial.print(F("x-axis acceleration trim within : ")); Serial.print(SelfTest[0], 1); Serial.println(F("% of factory value"));
+      // Serial.print(F("y-axis acceleration trim within : ")); Serial.print(SelfTest[1], 1); Serial.println(F("% of factory value"));
+      // Serial.print(F("z-axis acceleration trim within : ")); Serial.print(SelfTest[2], 1); Serial.println(F("% of factory value"));
+      // Serial.print(F("x-axis gyration trim within : ")); Serial.print(SelfTest[3], 1); Serial.println(F("% of factory value"));
+      // Serial.print(F("y-axis gyration trim within : ")); Serial.print(SelfTest[4], 1); Serial.println(F("% of factory value"));
+      // Serial.print(F("z-axis gyration trim within : ")); Serial.print(SelfTest[5], 1); Serial.println(F("% of factory value"));
+      // Serial.println("");
+      calibrateMPU9250(gyroBias, accelBias); // Calibrate gyro and accelerometers, load biases in bias registers
+      // Serial.println(F("MPU9250 accelerometer bias"));
+      // Serial.print(F("x = ")); Serial.println((int)(1000 * accelBias[0]));
+      // Serial.print(F("y = ")); Serial.println((int)(1000 * accelBias[1]));
+      // Serial.print(F("z = ")); Serial.print((int)(1000 * accelBias[2]));
+      // Serial.println(F(" mg"));
+      // Serial.println("");
+      // Serial.println(F("MPU9250 gyro bias"));
+      // Serial.print(F("x = ")); Serial.println(gyroBias[0], 1);
+      // Serial.print(F("y = ")); Serial.println(gyroBias[1], 1);
+      // Serial.print(F("z = ")); Serial.print(gyroBias[2], 1);
+      // Serial.println(F(" o/s"));
+      // Serial.println("");
+      // delay(1000);
+      initMPU9250();
+      // Serial.println(F("MPU9250 initialized for active data mode....")); // Initialize device for active mode read of acclerometer, gyroscope, and temperature
+      // Serial.println("");
+  
+
+      // Read the WHO_AM_I register of the magnetometer, this is a good test of communication
+      byte d = readByte(AK8963_ADDRESS, AK8963_WHO_AM_I);  // Read WHO_AM_I register for AK8963
+      if (d == 0x48)
+      {
+        // ----- AK8963 found
+        // Serial.println(F("AK8963 is online ..."));
+        // Get magnetometer calibration from AK8963 ROM
+        initAK8963(magCalibration);
+      //   Serial.println(F("AK8963 initialized for active data mode ...")); // Initialize device for active mode read of magnetometer
+      //   Serial.println("");
+      //   Serial.println(F("Asahi sensitivity adjustment values"));
+      //   Serial.print(F("ASAX = ")); Serial.println(magCalibration[0], 2);
+      //   Serial.print(F("ASAY = ")); Serial.println(magCalibration[1], 2);
+      //   Serial.print(F("ASAZ = ")); Serial.println(magCalibration[2], 2);
+      //   Serial.println("");
+      //   delay(1000);
+      }
+
+      else
+      {
+        // ----- AK8963 not found
+        // Serial.print(F("AK8963 WHO_AM_I = ")); Serial.println(c, HEX);
+        // Serial.println(F("I should be 0x48"));
+        // Serial.print(F("Could not connect to AK8963: 0x"));
+        // Serial.println(d, HEX);
+        // Serial.println("");
+        while (1) ; // Loop forever if communication doesn't happen
+
+      }
+    }
+    else
+    {
+      // ----- MPU9250 not found
+      Serial.print(F("MPU9250 WHO_AM_I = ")); Serial.println(c, HEX);
+      Serial.println(F("I should be 0x71 or 0x73"));
+      Serial.print(F("Could not connect to MPU9250: 0x"));
+      Serial.println(c, HEX);
+      Serial.println("");
+      while (1) ; // Loop forever if communication doesn't happen
+    }
+    // --------------------------
+    // TASK 0,1 tasks & messages
+    // --------------------------
+    if ((TASK == 0) || (TASK == 1))
+    {
+  #ifdef LCD2
+      // tft.clear();
+      tft.fillScreen(BACKGROUND);
+      tft.setCursor(0, 0);
+      tft.print(F("Tumble compass"));
+      tft.setCursor(0, 1);
+      tft.print(F("for 30 seconds"));
+  #endif
+      // ----- Calculate magnetometer offsets & scale-factors
+      Serial.println(F("Magnetometer calibration ..."));
+      Serial.println(F("Tumble/wave device for 30 seconds in a figure 8"));
+      delay(2000);
+      magCalMPU9250(magBias, magScale);
+
+  #ifdef LCD2
+      // tft.clear();
+      tft.fillScreen(BACKGROUND);
+      tft.setCursor(0, 0);
+      tft.print(F("Stop tumbling"));
+  #endif
+      Serial.println(F("Stop tumbling"));
+      Serial.println("");
+      delay(4000);
+    }
+    if (TASK == 1)
+    {
+  #ifdef LCD2
+      // tft.clear();
+      tft.fillScreen(BACKGROUND);
+      tft.setCursor(0, 0);
+      tft.print(F("Record offsets"));
+      tft.setCursor(0, 1);
+      tft.print(F("& scale-factors"));
+  #endif
+      // ----- Message
+      Serial.println(F("------------------------------------------"));
+      Serial.println(F("Copy-&-paste the following code into your "));
+      Serial.println(F("Arduino header then delete the old code."));
+      Serial.println(F("------------------------------------------"));
+      Serial.println(F(""));
+      Serial.println(F("float"));
+      Serial.print(F("Mag_x_offset = "));
+      Serial.print(magBias[0]);
+      Serial.println(",");
+      Serial.print(F("Mag_y_offset = "));
+      Serial.print(magBias[1]);
+      Serial.println(",");
+      Serial.print(F("Mag_z_offset = "));
+      Serial.print(magBias[2]);
+      Serial.println(",");
+      Serial.print(F("Mag_x_scale = "));
+      Serial.print(magScale[0]);
+      Serial.println(",");
+      Serial.print(F("Mag_y_scale = "));
+      Serial.print(magScale[1]);
+      Serial.println(",");
+      Serial.print(F("Mag_z_scale = "));
+      Serial.print(magScale[2]);
+      Serial.println(F(";"));
+
+      // ----- Halt program
+      while (true);
+
+    }
+
     timer = millis();
+    distance = 255; // for testing
+    direction_angle = 0; // for testing
+    navigating = true;
+
     get_loc_timer = millis();
     enter_dest_state = STARTSCREEN;
 }
@@ -417,8 +585,11 @@ void navigate_loop()
         request[0] = '\0';
         response[0] = '\0';
 
+        longitude = -71.0926422;
+        latitude = 42.3582736;
+
         // !!!! fix this!!!!
-        sprintf(request, "GET https://608dev-2.net/sandbox/sc/team8/server_src/request_handler.py?lat=%lf&lon=%lf  HTTP/1.1\r\n", longitude, latitude);
+        sprintf(request, "GET https://608dev-2.net/sandbox/sc/team8/server_src/request_handler.py?user_id=1&lat=%lf&lon=%lf&destination=2  HTTP/1.1\r\n", longitude, latitude);
         strcat(request, "Host: 608dev-2.net\r\n");
         strcat(request, "\r\n");
 
@@ -426,12 +597,62 @@ void navigate_loop()
 
         Serial.print("response_from_python: ");
         Serial.println(response);
-        tft.printf("Loc: %s", response);
-        Serial.print("Location: ");
-        Serial.println(response);
 
-        get_loc_timer = millis();
+        refresh_data();                              // This must be done each time through the loop
+        calc_quaternion();                           // This must be done each time through the loop
+        // ----- Processing Tasks
+
+        switch (TASK) {
+          case 2:
+            compass_cal();                          // Get compass offsets and scale-factors using Processing "compass_cal.pde" (circle-method)
+            break;
+          case 3:
+            compass_rose();                         // View compass heading using Processing "compass_rose.pde"
+            break;
+          default:
+            break;
+        }
+        // ----- Perform these tasks every 500mS
+
+        delt_t = millis() - count;
+        if (delt_t > 500)
+        {
+          switch (TASK)
+          {
+            case 0:
+              view_heading_LCD();                   // Send data to LCD display
+              break;
+            case 4:
+              view_registers_SM();                  // Send  MPU9250 register contents to Serial Monitor (115200 bauds)
+              break;
+            case 5:
+              view_heading_SM();                    // Send compass pitch roll & heading to Serial Monitor (115200 bauds)
+              break;
+            case 6:
+              view_heading_LCD();                   // Send data to LCD display
+              break;
+            // case 20:
+            //   angle_return();
+            default:
+              break;
+          }
+        
+        // based on distance go hot to cold
+        // need to make sure angle is an int from 0 to 359
+        // need to make sure distance is an int from 0 to 255. SCALE APPROPRIATELY!
+        if (abs(direction_angle-prev_direction_angle)>3 || abs(distance-prev_distance)>1){
+          tft.fillScreen(BACKGROUND);
+          direction_angle = -angle_return(); // function that gets yaw = heading
+          arrow.update(navigating, direction_angle, distance);
+          tft.setCursor(0,0);
+          tft.print("Angle is ");
+          tft.print(-direction_angle);
+        }
+          // ----- Housekeeping
+          // digitalWrite(myLed, !digitalRead(myLed));  // Toggle led
+        count = millis(); 
     }
+    get_loc_timer = millis();
 }
 
 // main body of code
