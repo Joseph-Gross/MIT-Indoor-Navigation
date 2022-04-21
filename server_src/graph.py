@@ -12,26 +12,26 @@ from queue import PriorityQueue
 
 
 # # use these imports if working locally
-# POLYGONS_CSV_FILE_PATH = "data/polygons.csv"
-#
-# NODES_0_CSV_FILE_PATH = "data/nodes_0.csv"
-# NODES_1_CSV_FILE_PATH = "data/nodes_1.csv"
-# NODES_STAIRS_CSV_FILE_PATH = "data/nodes_stairs.csv"
-# NODES_ELEVATORS_CSV_FILE_PATH = "data/nodes_elevators.csv"
-#
-# EDGES_0_CSV_FILE_PATH = "data/edges_0.csv"
-# EDGES_1_CSV_FILE_PATH = "data/edges_1.csv"
+POLYGONS_CSV_FILE_PATH = "data/polygons.csv"
+
+NODES_0_CSV_FILE_PATH = "data/nodes_0.csv"
+NODES_1_CSV_FILE_PATH = "data/nodes_1.csv"
+NODES_STAIRS_CSV_FILE_PATH = "data/nodes_stairs.csv"
+NODES_ELEVATORS_CSV_FILE_PATH = "data/nodes_elevators.csv"
+
+EDGES_0_CSV_FILE_PATH = "data/edges_0.csv"
+EDGES_1_CSV_FILE_PATH = "data/edges_1.csv"
 
 # these imports are used server side
-POLYGONS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/polygons.csv"
-
-NODES_0_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_0.csv"
-NODES_1_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_1.csv"
-NODES_STAIRS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_stairs.csv"
-NODES_ELEVATORS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_elevators.csv"
-
-EDGES_0_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/edges_0.csv"
-EDGES_1_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/edges_1.csv"
+# POLYGONS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/polygons.csv"
+#
+# NODES_0_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_0.csv"
+# NODES_1_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_1.csv"
+# NODES_STAIRS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_stairs.csv"
+# NODES_ELEVATORS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_elevators.csv"
+#
+# EDGES_0_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/edges_0.csv"
+# EDGES_1_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/edges_1.csv"
 
 
 class NodeType(Enum):
@@ -502,7 +502,7 @@ def create_graph(nodes: List[Node], edges: List[Tuple[str, str]], num_floors: in
     return graph
 
 
-def get_current_building(polygons: Dict[str, Polygon], point: Location) -> Optional[int]:
+def get_current_building(polygons: Dict[str, Polygon], point: Location) -> str:
     building_num = None
     for building, polygon in polygons.items():  # loop thru all the polygons we got from polygons.csv
         if polygon.is_within_area(point):
@@ -574,8 +574,8 @@ if __name__ == "__main__":
     print(graph.find_shortest_path("7.1.1.b", "2"))
     print("---------")
 
-    test = Location(lon=42.358478, lat=-71.092197)
-    print(graph.get_closest_node(test, floor=1))
+    test = Location(lon=42.3582736, lat=-71.0926422)
+    print(get_current_building(polygons, test))
     dict_of_polys = parse_polygons(POLYGONS_CSV_FILE_PATH)
     building = get_current_building(dict_of_polys, test)
     print(building)

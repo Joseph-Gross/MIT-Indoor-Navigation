@@ -18,8 +18,8 @@ class RequestValues:
 
 @dataclass
 class Response:
-    curr_building: int
-    next_building: int
+    curr_building: str
+    next_building: str
     curr_node: str
     next_node: str
     dist_next_node: float
@@ -44,8 +44,8 @@ def try_parse_get_request(request) -> RequestValues:
     lat = float(values.get("lat"))
     lon = float(values.get("lon"))
     destination = values.get("destination")
-    current_floor = values.get("current_floor")
-    destination_floor = values.get("destination_floor")
+    current_floor = int(values.get("current_floor"))
+    destination_floor = int(values.get("destination_floor"))
 
     point = graph_utils.Location(lat=lat, lon=lon)
 
@@ -80,7 +80,7 @@ def request_handler(request):
     dir_next_node = curr_edge.direction
     eta = graph_utils.calculate_eta(dist)
 
-    response = Response(curr_building=curr_building, next_building=next_node.building,
+    response = Response(curr_building=curr_node.building, next_building=next_node.building,
                         curr_node=curr_node.id, next_node=next_node.id,
                         dist_next_node=dist_next_node, dir_next_node=dir_next_node,
                         has_arrived=has_arrived, eta=eta, dest_node=dest_node.id, dest_building=dest_node.building)
