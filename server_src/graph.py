@@ -182,12 +182,12 @@ class Graph:
     def get_weight(self, v1_id: str, v2_id: str):
         return self.adj[v1_id][v2_id]
 
-    def get_closest_node(self, point: Location, floor: int, node_type: NodeType = NodeType.BUILDING) -> str:
+    def get_closest_node(self, point: Location, floor: int = 0, node_type: NodeType = NodeType.BUILDING) -> str:
         """
         Given location, find closest node in the graph. This will be used to as the start node when calculating the
         shortest path from a location
         """
-        floor = 0  # hardcoded to floor 0 for now
+        # hardcoded to floor 0 for now
 
         src = Node("s", point, floor, None)
 
