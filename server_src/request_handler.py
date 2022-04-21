@@ -34,7 +34,6 @@ def try_parse_get_request(request) -> RequestValues:
     assert "user_id" in values, "Missing data: 'user_id'"
     assert "lat" in values, "Missing data: 'lat'"
     assert "lon" in values, "Missing data: 'lon'"
-    assert "dest" in values, "Missing data: 'destination'"
 
     user_id = values.get("user_id")
     lat = float(values.get("lat"))
@@ -58,7 +57,6 @@ def request_handler(request):
         return "Both lat and lon must be valid coordinates"
 
     polygons, nodes, edges, graph = graph_utils.create_all_graph_components()
-
     curr_node = graph.get_node(graph.get_closest_node(request_values.point))
     curr_building = graph_utils.get_current_building(polygons, request_values.point)
     has_arrived = curr_building == request_values.destination
