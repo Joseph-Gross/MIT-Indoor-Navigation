@@ -66,7 +66,7 @@ def request_handler(request):
     next_node = graph.get_node(path[1])
     dest_node = graph.get_node(path[-1])
 
-    curr_edge = graph.get_edge(curr_node.id, next_node.id).weight
+    curr_edge = graph.get_edge(curr_node.id, next_node.id)
     dist_next_node = curr_edge.weight
     dir_next_node = curr_edge.direction
     eta = graph_utils.calculate_eta(dist)
