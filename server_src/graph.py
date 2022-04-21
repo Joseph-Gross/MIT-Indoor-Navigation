@@ -13,12 +13,12 @@ from queue import PriorityQueue
 
 # # use these imports if working locally
 # POLYGONS_CSV_FILE_PATH = "data/polygons.csv"
-
+#
 # NODES_0_CSV_FILE_PATH = "data/nodes_0.csv"
 # NODES_1_CSV_FILE_PATH = "data/nodes_1.csv"
 # NODES_STAIRS_CSV_FILE_PATH = "data/nodes_stairs.csv"
 # NODES_ELEVATORS_CSV_FILE_PATH = "data/nodes_elevators.csv"
-
+#
 # EDGES_0_CSV_FILE_PATH = "data/edges_0.csv"
 # EDGES_1_CSV_FILE_PATH = "data/edges_1.csv"
 
@@ -176,16 +176,27 @@ class Graph:
     def get_nodes_by_type(self, node_type: NodeType) -> Set[str]:
         return self.types[node_type]
 
+    def get_nodes_by_floor_and_type(self, floor: int, node_type: NodeType):
+        nodes_by_floor = self.get_nodes_by_floor(floor)
+        nodes_by_type = self.get_nodes_by_type(node_type)
+        return nodes_by_floor & nodes_by_type
+
+    def get_nodes_by_building_and_floor_and_type(self, building_name: str, floor: int, node_type: NodeType):
+        nodes_by_floor = self.get_nodes_by_floor(floor)
+        nodes_by_building = self.get_nodes_by_building(building_name)
+        nodes_by_type = self.get_nodes_by_type(node_type)
+        return nodes_by_floor & nodes_by_building & nodes_by_type
+
     def get_node_ids(self):
         return [key for key in self._vertices]
 
     def get_weight(self, v1_id: str, v2_id: str):
         return self.adj[v1_id][v2_id]
 
-    def get_closest_node(self, point: Location, floor: int = 0, node_type: NodeType = NodeType.BUILDING) -> str:
+    def get_closest_node(self, point: Location, floor: int = 1, node_type: NodeType = NodeType.BUILDING) -> str:
         """
-        Given location, find closest node in the graph. This will be used to as the start node when calculating the
-        shortest path from a location
+        Given location, find closest building node in the graph on the same floor. This will be used to as the start
+        node when calculating the shortest path from a location
         """
         # hardcoded to floor 0 for now
 
@@ -193,7 +204,7 @@ class Graph:
 
         min_dist = float('inf')
         closest_node = None
-        for v_id in self.get_nodes_by_floor(floor):
+        for v_id in self.get_nodes_by_floor_and_type(floor, node_type):
             v = self.get_node(v_id)
             edge = Edge(src, v)
             if edge.weight < min_dist:
@@ -251,16 +262,17 @@ class Graph:
         path.append(current_node)
         return path[::-1]
 
-    def find_shortest_path(self, src: str, building_name: str) -> Tuple[List[str], float]:
+    def find_shortest_path(self, src: str, building_name: str, floor: int = 1) -> Tuple[List[str], float]:
         assert self.contains_node(src)
         assert self.contains_building(building_name)
 
         dist, parent = self.sssp(src)
 
-        nodes_in_building = self.get_nodes_by_building(building_name)
+        building_nodes_in_building_and_on_floor = self.get_nodes_by_building_and_floor_and_type(building_name, floor,
+                                                                                                NodeType.BUILDING)
         destination = None
         min_dist = float('inf')
-        for v in nodes_in_building:
+        for v in building_nodes_in_building_and_on_floor:
             if dist[v] < min_dist:
                 min_dist = dist[v]
                 destination = v
