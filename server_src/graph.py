@@ -187,6 +187,8 @@ class Graph:
         Given location, find closest node in the graph. This will be used to as the start node when calculating the
         shortest path from a location
         """
+        floor = 0  # hardcoded to floor 0 for now
+
         src = Node("s", point, floor, None)
 
         min_dist = float('inf')
