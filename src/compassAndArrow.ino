@@ -59,16 +59,17 @@ class Arrow {
       length = 70;
       width = 12;
     }
-    void update(bool navigating, float angle, int distance){
+    void update(bool navigating, float angle, int distance, float dir_next_node){
       if (navigating){
         color.r = distance;
         color.b = 255-distance; 
         // angle -= pi/2.0; // to make it point North // THIS WILL ACCEPT AN ANGLE OFFSET FROM EAST
         // float angle_rad = degree_to_rad*angle; // angle already in radians!
+        angle-=dir_next_node;
         float hl = length/2.0;
         float hw = width/2.0;
-        float s = sin(angle_rad);
-        float c = cos(angle_rad);
+        float s = sin(angle);
+        float c = cos(angle);
         p1.x = center.x+c*hl-s*hw;
         p1.y = center.y+s*hl+c*hw;
         p2.x = center.x-c*hl-s*hw;

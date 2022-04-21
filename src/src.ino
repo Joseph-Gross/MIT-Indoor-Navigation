@@ -643,7 +643,7 @@ void navigate_loop()
         if (abs(direction_angle-prev_direction_angle)>3 || abs(distance-prev_distance)>1){
           tft.fillScreen(BACKGROUND);
           direction_angle = -angle_return(); // function that gets yaw = heading
-          arrow.update(navigating, direction_angle, distance);
+          arrow.update(navigating, direction_angle, distance, dir_next_node);
           tft.setCursor(0,0);
           tft.print("Angle is ");
           tft.print(-direction_angle);
