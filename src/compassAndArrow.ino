@@ -29,18 +29,18 @@ struct Vec {
   float x;
   float y;
 };
-// struct RGB { //looks like this won't actually be used since tft.stroke(r,g,b) isn't a real function I can use
-//   int r;
-//   int g;
-//   int b;
-// };
+struct RGB { //looks like this won't actually be used since tft.stroke(r,g,b) isn't a real function I can use
+  int r;
+  int g;
+  int b;
+};
 class Arrow {
     Vec center;
     Vec p1, p2, p3, p4, p5, p6, p7;
     float angle; //radians
     int distance; // distance to goal, between 0 and 255 where each increment represents 10 meters, so the max distance would be 2550
     TFT_eSPI* local_tft;
-    // RGB color;
+    RGB color;
     int length; // based on where we want to center the arrow we should be able to scale its length so it doesn't go off the screen.
     int width;
     int left_limit = 0; //left side of screen limit
