@@ -1,5 +1,6 @@
-from dataclasses import dataclass
-from enum import Enum
+from dataclasses import dataclass, field, asdict
+import time
+from enum import Enum, unique
 from typing import Dict, Set, List, Optional, Tuple
 
 import csv
@@ -22,6 +23,9 @@ NODES_ELEVATORS_CSV_FILE_PATH = "data/nodes_elevators.csv"
 EDGES_0_CSV_FILE_PATH = "data/edges_0.csv"
 EDGES_1_CSV_FILE_PATH = "data/edges_1.csv"
 
+GRAPH_JSON_FILE_PATH = "data/graph.json"
+APSP_JSON_FILE_PATH = "data/apsp.json"
+
 # these imports are used server side
 # POLYGONS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/polygons.csv"
 #
@@ -32,9 +36,13 @@ EDGES_1_CSV_FILE_PATH = "data/edges_1.csv"
 #
 # EDGES_0_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/edges_0.csv"
 # EDGES_1_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/edges_1.csv"
+#
+# GRAPH_JSON_FILE_PATH = "/var/jail/home/team8/server_src/data/graph.json"
+# APSP_JSON_FILE_PATH = "/var/jail/home/team8/server_src/data/apsp.json"
 
 
-class NodeType(Enum):
+@unique
+class NodeType(str, Enum):
     BUILDING = "b"
     ELEVATOR = "e"
     STAIR = "s"
@@ -50,25 +58,31 @@ class Location:
         return self.lat, self.lon
 
 
+@dataclass
+class Route:
+    source: str
+    destination: str
+    path: list[str]
+    distance: float
+
+
+@dataclass
 class Node:
-
-    def __init__(self, id: str, location: Location, floor: int, building_name: Optional[str],
-                 node_type: NodeType = NodeType.BUILDING):
-        self.id = id
-        self.location = location
-        self.building = building_name
-        self.floor = floor
-        self.node_type = node_type
-
-    def __repr__(self):
-        return f"Node({self.id}, {self.location}, {self.floor}, {self.building})"
+    id: str
+    location: Location
+    building: str
+    floor: int
+    node_type: Optional[NodeType] = NodeType.BUILDING
 
 
+@dataclass
 class Edge:
+    v1: Node
+    v2: Node
+    weight: float = field(init=False)
+    direction: Optional[float] = field(init=False)
 
-    def __init__(self, v1: Node, v2: Node):
-        self.v1 = v1
-        self.v2 = v2
+    def __post_init__(self):
         self.weight = self._calculate_distance()
         self.direction = self._calculate_direction()
 
@@ -76,7 +90,6 @@ class Edge:
         return distance.distance(self.v1.location.values, self.v2.location.values).meters
 
     def _calculate_direction(self) -> Optional[float]:
-
         point_1 = self.v1.location
         point_2 = self.v2.location
 
@@ -93,8 +106,74 @@ class Graph:
         self.buildings: Dict[str, Set[str]] = dict()  # building -> node_id
         self.floors: Dict[int, Set[str]] = dict()  # floor -> node_id
         self.types: Dict[NodeType, Set[str]] = dict()  # NodeType -> node_id
-        # adj matrix with weights {node_id: {node_id: weight}}
-        self.adj: Dict[str, Dict[str, float]] = dict()
+        self.adj: Dict[str, Dict[str, float]] = dict()  # adj matrix with weights {node_id: {node_id: weight}}
+        self.apsp_cache: Dict[Tuple[str, str, float], Route] = dict()
+
+    def load_from_json(self, json_file_path: str):
+        """
+        Loads graph representation to json file.
+
+        {
+            node_id: {
+                'node': Node,
+                'adj': {n1_id: dist, n2_id: dist, ..., ni_id: dist}
+            },
+        }
+        """
+        self.__init__()
+
+        with open(json_file_path) as json_file:
+            graph = json.load(json_file)
+
+        adj = {}
+        for node_id, values in graph.items():
+            raw_node_values = values.get('node')
+            raw_node_values["location"] = Location(**raw_node_values.get("location"))
+            node = Node(**raw_node_values)
+            self.add_node(node)
+
+            adj[node_id] = values.get('adj')
+
+        self.adj = adj
+
+    def save_to_json(self, json_file_path: str):
+        """
+        Dumps graph representation to json file.
+
+        {
+            node_id: {
+                'node': Node,
+                'adj': {n1_id: dist, n2_id: dist, ..., ni_id: dist}
+            },
+        }
+        """
+        graph = {}  # node_id -> {node: Node, adj: Adj}
+
+        for node_id, adj in self.adj.items():
+            node = self.get_node(node_id)
+            graph[node_id] = {
+                "node": asdict(node),
+                "adj": adj
+            }
+
+        with open(json_file_path, 'w') as json_file:
+            json.dump(graph, json_file, indent=4, sort_keys=True)
+
+    def load_apsp_from_json(self, json_file_path: str):
+        self.apsp_cache.clear()
+
+        with open(json_file_path) as json_file:
+            serialized_apsp = json.load(json_file)
+
+        apsp = {tuple(json.loads(key)): Route(**raw_route) for key, raw_route in serialized_apsp.items()}
+        self.apsp_cache = apsp
+
+    def save_apsp_to_json(self, json_file_path: str):
+        apsp = self.apsp()
+        serialized_apsp = {json.dumps(key): asdict(route) for key, route in apsp.items()}
+
+        with open(json_file_path, 'w') as json_file:
+            json.dump(serialized_apsp, json_file, indent=4, sort_keys=True)
 
     def contains_floor(self, floor: int) -> bool:
         return floor in self.floors
@@ -187,8 +266,17 @@ class Graph:
         nodes_by_type = self.get_nodes_by_type(node_type)
         return nodes_by_floor & nodes_by_building & nodes_by_type
 
-    def get_node_ids(self):
-        return [key for key in self._vertices]
+    def get_node_ids(self) -> Set[str]:
+        return set([key for key in self._vertices])
+
+    def get_building_names(self) -> Set[str]:
+        return set([key for key in self.buildings])
+
+    def get_floor_numbers(self) -> Set[int]:
+        return set([key for key in self.floors])
+
+    def get_node_types(self) -> Set[NodeType]:
+        return set([key for key in self.types])
 
     def get_weight(self, v1_id: str, v2_id: str):
         return self.adj[v1_id][v2_id]
@@ -200,7 +288,7 @@ class Graph:
         """
         # hardcoded to floor 0 for now
 
-        src = Node("s", point, floor, None)
+        src = Node(id="s", location=point, building="None", floor=floor)
 
         min_dist = float('inf')
         closest_node = None
@@ -262,9 +350,13 @@ class Graph:
         path.append(current_node)
         return path[::-1]
 
-    def find_shortest_path(self, src: str, building_name: str, floor: int = 1) -> Tuple[List[str], float]:
+    def find_shortest_path(self, src: str, building_name: str, floor: int = 1, use_cache: bool = True) -> Route:
         assert self.contains_node(src)
         assert self.contains_building(building_name)
+
+        key = (src, building_name, floor)
+        if use_cache and key in self.apsp_cache:
+            return self.apsp_cache[key]
 
         dist, parent = self.sssp(src)
 
@@ -276,8 +368,45 @@ class Graph:
             if dist[v] < min_dist:
                 min_dist = dist[v]
                 destination = v
+        try:
+            path = self.parse_sssp_parent(parent, destination)
+        except KeyError:
+            path = None
+            min_dist = float('inf')
 
-        return self.parse_sssp_parent(parent, destination), min_dist
+        return Route(source=src, destination=destination, path=path, distance=min_dist)
+
+    def apsp(self):
+        apsp = {}
+
+        for v in self.get_nodes_by_type(NodeType.BUILDING):
+            for building in self.get_building_names():
+                for floor in self.get_floor_numbers():
+                    route = self.find_shortest_path(v, building, floor)
+                    apsp[(v, building, floor)] = route
+
+        return apsp
+
+    def clear_cache(self):
+        self.apsp_cache = dict()
+
+    def __eq__(self, other):
+
+        same_node_ids = self.get_node_ids() == other.get_node_ids()
+        same_nodes = any([self.get_node(v) == other.get_node(v) for v in self.get_node_ids()]) \
+            if same_node_ids else False
+
+        same_buildings = self.get_building_names() == other.get_building_names()
+        same_nodes_by_building = all([self.get_nodes_by_building(b) == other.get_nodes_by_building(b)
+                                      for b in self.get_building_names()]) if same_buildings else False
+
+        same_floors = self.get_floor_numbers() == other.get_floor_numbers()
+        same_nodes_by_floor = all([self.get_nodes_by_floor(f) == other.get_nodes_by_floor(f)
+                                   for f in self.get_floor_numbers()]) if same_floors else False
+
+        same_edges = self.adj == other.adj
+
+        return same_nodes and same_nodes_by_building and same_nodes_by_floor and same_edges
 
 
 class Polygon:
@@ -400,8 +529,7 @@ def parse_nodes(nodes_csv_file_path: str, polygons: Dict[str, Polygon], floor: O
             node_name.insert(1, str(floor))
             node_name.append(node_type.value)
             node_id = ".".join(node_name)
-            node = Node(id=node_id, location=location,
-                        building_name=building, floor=floor, node_type=node_type)
+            node = Node(id=node_id, location=location, building=building, floor=floor, node_type=node_type)
             nodes.append(node)
             line_count += 1
 
@@ -478,8 +606,8 @@ def create_graph(nodes: List[Node], edges: List[Tuple[str, str]], num_floors: in
             node_id[1] = str(floor)
             node_id = ".".join(node_id)
 
-            node_to_add = Node(node_id, node.location, floor,
-                               node.building, node.node_type)
+            node_to_add = Node(id=node_id, location=node.location, floor=floor,
+                               building=node.building, node_type=node.node_type)
             nodes_to_add.append(node_to_add)
 
             closest_node_id = graph.get_closest_node(node.location, floor)
@@ -502,6 +630,62 @@ def create_graph(nodes: List[Node], edges: List[Tuple[str, str]], num_floors: in
     return graph
 
 
+def create_all_graph_components(num_floors: int = 2, use_cache: bool = True):
+    polygons = parse_polygons(POLYGONS_CSV_FILE_PATH)
+
+    if use_cache:
+        graph = Graph()
+        graph.load_from_json(GRAPH_JSON_FILE_PATH)
+        graph.load_apsp_from_json(APSP_JSON_FILE_PATH)
+        return polygons, graph
+
+    nodes_stairs = parse_nodes(
+        NODES_STAIRS_CSV_FILE_PATH, polygons, None, NodeType.STAIR)
+    nodes_elevators = parse_nodes(
+        NODES_ELEVATORS_CSV_FILE_PATH, polygons, None, NodeType.ELEVATOR)
+    nodes_0 = parse_nodes(NODES_0_CSV_FILE_PATH, polygons, 0)
+    nodes_1 = parse_nodes(NODES_1_CSV_FILE_PATH, polygons, 1)
+
+    edges_0 = parse_edges(EDGES_0_CSV_FILE_PATH, nodes_0)
+    edges_1 = parse_edges(EDGES_1_CSV_FILE_PATH, nodes_1)
+
+    nodes = nodes_stairs + nodes_elevators + nodes_0 + nodes_1
+    edges = edges_0 + edges_1
+    graph = create_graph(nodes, edges, num_floors=num_floors)
+    return polygons, graph
+
+
+def compare_cache_vs_no_cache():
+    _, graph = create_all_graph_components(use_cache=False)
+
+    graph.save_to_json(GRAPH_JSON_FILE_PATH)
+    graph.save_apsp_to_json(APSP_JSON_FILE_PATH)
+
+    graph_2 = Graph()
+    graph_2.load_from_json(GRAPH_JSON_FILE_PATH)
+    graph_2.load_apsp_from_json(APSP_JSON_FILE_PATH)
+
+    start = time.time()
+    for building in graph.get_building_names():
+        graph.find_shortest_path("1.1.1.b", building, use_cache=False)
+    end = time.time()
+    avg_non_cache_time = (end - start) / len(graph.get_building_names())
+
+    start = time.time()
+    for building in graph_2.get_building_names():
+        graph_2.find_shortest_path("1.1.1.b", building, use_cache=True)
+    end = time.time()
+    avg_cache_time = (end - start) / len(graph_2.get_building_names())
+
+    print("Cache vs No Cache Comparison:")
+    print(f"Avg time (non cache): {avg_non_cache_time}")
+    print(f"Avg time (cache): {avg_cache_time}")
+
+    comparison_factor = round(avg_non_cache_time / avg_cache_time)
+    print(f"Cache is faster by a factor of {comparison_factor}")
+    print("---------")
+
+
 def get_current_building(polygons: Dict[str, Polygon], point: Location) -> str:
     building_num = None
     for building, polygon in polygons.items():  # loop thru all the polygons we got from polygons.csv
@@ -520,30 +704,10 @@ def calculate_eta(distance: float, avg_velocity: float = 1.34112):
     return distance / avg_velocity
 
 
-def create_all_graph_components():
-    polygons = parse_polygons(POLYGONS_CSV_FILE_PATH)
-    nodes_stairs = parse_nodes(
-        NODES_STAIRS_CSV_FILE_PATH, polygons, None, NodeType.STAIR)
-    nodes_elevators = parse_nodes(
-        NODES_ELEVATORS_CSV_FILE_PATH, polygons, None, NodeType.ELEVATOR)
-    nodes_0 = parse_nodes(NODES_0_CSV_FILE_PATH, polygons, 0)
-    nodes_1 = parse_nodes(NODES_1_CSV_FILE_PATH, polygons, 1)
-
-    edges_0 = parse_edges(EDGES_0_CSV_FILE_PATH, nodes_0)
-    edges_1 = parse_edges(EDGES_1_CSV_FILE_PATH, nodes_1)
-
-    nodes = nodes_stairs + nodes_elevators + nodes_0 + nodes_1
-    edges = edges_0 + edges_1
-    graph = create_graph(nodes, edges, num_floors=2)
-    return polygons, nodes, edges, graph
-
-
 if __name__ == "__main__":
     polygons = parse_polygons(POLYGONS_CSV_FILE_PATH)
-    nodes_stairs = parse_nodes(
-        NODES_STAIRS_CSV_FILE_PATH, polygons, None, NodeType.STAIR)
-    nodes_elevators = parse_nodes(
-        NODES_ELEVATORS_CSV_FILE_PATH, polygons, None, NodeType.ELEVATOR)
+    nodes_stairs = parse_nodes(NODES_STAIRS_CSV_FILE_PATH, polygons, None, NodeType.STAIR)
+    nodes_elevators = parse_nodes(NODES_ELEVATORS_CSV_FILE_PATH, polygons, None, NodeType.ELEVATOR)
     nodes_0 = parse_nodes(NODES_0_CSV_FILE_PATH, polygons, 0)
     nodes_1 = parse_nodes(NODES_1_CSV_FILE_PATH, polygons, 1)
 
@@ -552,7 +716,7 @@ if __name__ == "__main__":
 
     nodes = nodes_stairs + nodes_elevators + nodes_0 + nodes_1
     edges = edges_0 + edges_1
-    graph = create_graph(nodes, edges, num_floors=2)
+    polygons, graph = create_all_graph_components(num_floors=2)
 
     print("Polygons:")
     pprint.pprint(polygons)
@@ -574,8 +738,7 @@ if __name__ == "__main__":
     print(graph.find_shortest_path("7.1.1.b", "2"))
     print("---------")
 
-    test = Location(lon=42.3582736, lat=-71.0926422)
-    print(get_current_building(polygons, test))
-    dict_of_polys = parse_polygons(POLYGONS_CSV_FILE_PATH)
-    building = get_current_building(dict_of_polys, test)
-    print(building)
+    compare_cache_vs_no_cache()
+
+
+

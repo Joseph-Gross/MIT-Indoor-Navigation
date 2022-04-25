@@ -64,21 +64,21 @@ def request_handler(request):
     except ValueError:
         return "Both lat and lon must be valid coordinates"
 
-    polygons, nodes, edges, graph = graph_utils.create_all_graph_components()
+    polygons, graph = graph_utils.create_all_graph_components(use_cache=True)
     curr_node = graph.get_node(graph.get_closest_node(request_values.point, floor=request_values.current_floor))
     curr_building = graph_utils.get_current_building(polygons, request_values.point)
     has_arrived = (curr_building == request_values.destination and
                    request_values.current_floor == request_values.destination_floor)
 
-    path, dist = graph.find_shortest_path(curr_node.id, request_values.destination, request_values.destination_floor)
+    route = graph.find_shortest_path(curr_node.id, request_values.destination, request_values.destination_floor)
 
-    next_node = graph.get_node(path[1])
-    dest_node = graph.get_node(path[-1])
+    next_node = graph.get_node(route.path[1])
+    dest_node = graph.get_node(route.destination)
 
     curr_edge = graph.get_edge(curr_node.id, next_node.id)
     dist_next_node = curr_edge.weight
     dir_next_node = curr_edge.direction
-    eta = graph_utils.calculate_eta(dist)
+    eta = graph_utils.calculate_eta(route.distance)
 
     response = Response(curr_building=curr_node.building, next_building=next_node.building,
                         curr_node=curr_node.id, next_node=next_node.id,

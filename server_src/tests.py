@@ -2,7 +2,8 @@ import unittest
 import csv
 
 from server_src import graph as graph_utils
-from server_src.graph import POLYGONS_CSV_FILE_PATH, NODES_1_CSV_FILE_PATH, EDGES_1_CSV_FILE_PATH
+from server_src.graph import POLYGONS_CSV_FILE_PATH, NODES_1_CSV_FILE_PATH, EDGES_1_CSV_FILE_PATH, GRAPH_JSON_FILE_PATH, \
+    APSP_JSON_FILE_PATH
 
 
 class PolygonTests(unittest.TestCase):
@@ -87,6 +88,24 @@ class GraphTests(unittest.TestCase):
         edges = graph_utils.parse_edges(EDGES_1_CSV_FILE_PATH, nodes)
         self.graph = graph_utils.create_graph(nodes, edges, num_floors=2)
 
+    def test_save_and_load_graph_json(self):
+        self.graph.save_to_json(GRAPH_JSON_FILE_PATH)
+
+        graph = graph_utils.Graph()
+        graph.load_from_json(GRAPH_JSON_FILE_PATH)
+
+        self.assertEqual(self.graph, graph)
+
+    def test_save_and_load_apsp_json(self):
+        self.graph.save_to_json(GRAPH_JSON_FILE_PATH)
+        self.graph.save_apsp_to_json(APSP_JSON_FILE_PATH)
+
+        graph = graph_utils.Graph()
+        graph.load_from_json(GRAPH_JSON_FILE_PATH)
+        graph.load_apsp_from_json(APSP_JSON_FILE_PATH)
+
+        self.assertEqual(self.graph.apsp(), graph.apsp_cache)
+
 
 class DijkstraTests(unittest.TestCase):
     def setUp(self):
@@ -142,11 +161,10 @@ class DijkstraTests(unittest.TestCase):
 
         expected_path = ["3.1.1.b", "kc.1.2.b", "4.1.1.b", "2.1.4.b"]
         expected_dest = expected_path[-1]
-        shortest_path, dist = self.graph.find_shortest_path(src, dest_building)
-        dest = shortest_path[-1]
+        route = self.graph.find_shortest_path(src, dest_building)
 
-        self.assertEqual(expected_path, shortest_path)
-        self.assertEqual(expected_dest, dest)
+        self.assertEqual(expected_path, route.path)
+        self.assertEqual(expected_dest, route.destination)
     
     def test_shortest_path_to_building_1(self):
         src = "1.1.1.b"
@@ -154,11 +172,10 @@ class DijkstraTests(unittest.TestCase):
 
         expected_path = ["1.1.1.b", "3.1.1.b", "3.1.2.b", "3.1.3.b", "3.1.4.b", "10.1.1.b"]
         expected_dest = expected_path[-1]
-        shortest_path, dist = self.graph.find_shortest_path(src, dest_building)
-        dest = shortest_path[-1]
+        route = self.graph.find_shortest_path(src, dest_building)
 
-        self.assertEqual(expected_path, shortest_path)
-        self.assertEqual(expected_dest, dest)
+        self.assertEqual(expected_path, route.path)
+        self.assertEqual(expected_dest, route.destination)
     
     def test_shortest_path_to_building_2(self):
         src = "4.1.4.b"
@@ -166,11 +183,10 @@ class DijkstraTests(unittest.TestCase):
 
         expected_path = ["4.1.4.b", "4.1.3.b", "4.1.2.b", "4.1.1.b", "2.1.4.b"]
         expected_dest = expected_path[-1]
-        shortest_path, dist = self.graph.find_shortest_path(src, dest_building)
-        dest = shortest_path[-1]
+        route = self.graph.find_shortest_path(src, dest_building)
 
-        self.assertEqual(expected_path, shortest_path)
-        self.assertEqual(expected_dest, dest)
+        self.assertEqual(expected_path, route.path)
+        self.assertEqual(expected_dest, route.destination)
     
     def test_shortest_path_to_building_3(self):
         src = "10.1.2.b"
@@ -178,11 +194,10 @@ class DijkstraTests(unittest.TestCase):
 
         expected_path = ["10.1.2.b", "10.1.1.b", "3.1.4.b", "3.1.3.b", "3.1.2.b", "3.1.1.b", "1.1.4.b"]
         expected_dest = expected_path[-1]
-        shortest_path, dist = self.graph.find_shortest_path(src, dest_building)
-        dest = shortest_path[-1]
+        route = self.graph.find_shortest_path(src, dest_building)
 
-        self.assertEqual(expected_path, shortest_path)
-        self.assertEqual(expected_dest, dest)
+        self.assertEqual(expected_path, route.path)
+        self.assertEqual(expected_dest, route.destination)
 
 
 if __name__ == "__main__":
