@@ -62,7 +62,7 @@ class Location:
 class Route:
     source: str
     destination: str
-    path: list[str]
+    path: List[str]
     distance: float
 
 
@@ -716,7 +716,7 @@ if __name__ == "__main__":
 
     nodes = nodes_stairs + nodes_elevators + nodes_0 + nodes_1
     edges = edges_0 + edges_1
-    polygons, graph = create_all_graph_components(num_floors=2)
+    polygons, graph = create_all_graph_components(num_floors=2, use_cache=False)
 
     print("Polygons:")
     pprint.pprint(polygons)
