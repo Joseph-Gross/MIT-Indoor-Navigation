@@ -8,10 +8,12 @@
 #include <Adafruit_ST7735.h> // Hardware-specific library NEEDED FOR COMPASS SENSING
 #include <math.h>
 #include <Wire.h>
+
 #include <Button.h>
 #include <Compass.h>
-#include <Navigation.h>
-#include <DestinationSelection.h>
+#include "Navigation.h"
+#include "DestinationSelection.h"
+#include "APIClient.h"
 
 #define BACKGROUND TFT_BLACK
 
@@ -30,11 +32,17 @@ enum global_state {START, ROOM_SELECT, CONFIRM_DESTINATION, NAVIGATING, CONFIRM_
 global_state state = START;
 global_state previous_state = ARRIVED;
 
+ApiClient apiClient();
 Button button(BUTTON); //button object!
-Navigation navigator(); //navigation object
+Navigation navigator(apiClient); //navigation object
 Compass compass(); //compass object
 
 
+void display_start_message() {
+    tft.fillScreen(BACKGROUND);
+    tft.println("Welcome to TinyTim, MIT's premiere campus navigator\n");
+    tft.println("Press the button to activate your guide and select a destination.");
+}
 
 void global_update(int button){
   // As a convention, try to call display_functionwhatever() only when transitioning between states if it makes sense (this won't work for some of them)
@@ -44,10 +52,9 @@ void global_update(int button){
       This is the idle state. Any press will move us to room selection mode.
       */
       if (previous_state!=START){
-        tft.fillScreen(BACKGROUND);
-        tft.println("Welcome to TinyTim, MIT's premiere campus navigator\n");
-        tft.println("Press the button to activate your guide and select a destination.");
+        display_start_message();
         previous_state = START;
+        Serial.println("START -> ")
       }
       if (button != 0) state = ROOM_SELECT;
     break;
@@ -156,7 +163,7 @@ void setup(){
   Serial.begin(115200); // Set up serial port
 
   // Setup wifi, tft, wire, etc.
-  wifi_setup(); // need to write this function. Should be easy
+  apiClient.initialize_wifi_connection();
   compass_setup(); // need to write this function. Should be easy
   tft_setup(); // need to write this function. Should be extremely easy
   // MAKE MORE SETUP FUNCTIONS
@@ -165,6 +172,6 @@ void setup(){
 }
 
 void loop(){
-  int b = button.update();
+  int button_flag = button.update();
   global_update(b);
 }
