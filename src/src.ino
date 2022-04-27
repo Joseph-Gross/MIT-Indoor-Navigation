@@ -4,16 +4,16 @@
 #include <WiFiClientSecure.h>
 #include <WiFiClient.h>
 #include <string.h>
-#include <Adafruit_GFX.h>    // Core graphics library NEEDED FOR COMPASS DISPLAY
-#include <Adafruit_ST7735.h> // Hardware-specific library NEEDED FOR COMPASS SENSING
+//#include <Adafruit_GFX.h>    // Core graphics library NEEDED FOR COMPASS DISPLAY
+//#include <Adafruit_ST7735.h> // Hardware-specific library NEEDED FOR COMPASS SENSING
 #include <math.h>
 #include <Wire.h>
 
-#include <Button.h>
-#include <Compass.h>
+#include "Button.h"
+#include "Compass.h"
 #include "Navigation.h"
 #include "DestinationSelection.h"
-#include "APIClient.h"
+#include "ApiClient.h"
 
 #define BACKGROUND TFT_BLACK
 
@@ -35,10 +35,11 @@ global_state previous_state = ARRIVED;
 ApiClient apiClient();
 Button button(BUTTON);
 Compass compass();
-Navigation navigator(apiClient, compass);
+Navigation navigator(&apiClient, &compass, &tft);
 
 DestinationSelection destination_selector();
 
+int navigation_flag;
 
 void display_start_message() {
     tft.fillScreen(BACKGROUND);
@@ -49,8 +50,8 @@ void display_start_message() {
 void display_confirm_destination_message() {
     tft.fillScreen(BACKGROUND);
     tft.println("You selected the following destination \n");
-    tft.println(dest);
-    tft.println('\nShort press to continue. Long press to reselect.\n')
+    tft.println(destination);
+    tft.println("\nShort press to continue. Long press to reselect.\n");
 }
 
 void display_destination_selection_instructions() {
@@ -105,7 +106,7 @@ void global_update(int button){
       to the arrived state, or the user long presses to cancel the current 
       navigation and moves to the Confirm Cancel Navigation state. 
       */
-      int navigation_flag = navigator.navigate();
+      navigation_flag = navigator.navigate();
       if (navigation_flag == 1) {
           state = ARRIVED;
           navigator.end_navigation();
@@ -151,7 +152,6 @@ void global_update(int button){
 }
 
 
-
 void setup(){
   Serial.begin(115200); // Set up serial port
 
@@ -162,8 +162,6 @@ void setup(){
   // MAKE MORE SETUP FUNCTIONS
 
   display_start_message();
-
-  timer = millis()
 }
 
 void loop(){

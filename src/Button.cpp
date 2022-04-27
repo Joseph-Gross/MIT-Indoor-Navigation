@@ -1,3 +1,4 @@
+// Imports
 #include "Button.h"
 
 
@@ -29,7 +30,7 @@ int Button::update() {
             }
             break;
         case S1:
-            if (button_pressed & millis()-button_change_time >= debounce_duration) {
+            if (button_pressed & (millis()-button_change_time >= debounce_duration)) {
                 state = S2;
                 S2_start_time = millis();
             } else if (!button_pressed) {
@@ -38,7 +39,7 @@ int Button::update() {
             }
             break;
         case S2:
-            if (button_pressed & millis()-S2_start_time >= long_press_duration) {
+            if (button_pressed & (millis()-S2_start_time >= long_press_duration)) {
                 state = S3;
             } else if (!button_pressed) {
                 state = S4;
@@ -52,17 +53,17 @@ int Button::update() {
             }
             break;
         case S4:
-            if (!button_pressed & millis()-button_change_time >= debounce_duration) {
+            if (!button_pressed & (millis()-button_change_time >= debounce_duration)) {
                 if (millis()-S2_start_time < long_press_duration) {
                     flag = 1;
                 } else {
                     flag = 2;
                 }
                 state = S0;
-            } else if (button_pressed & millis()-S2_start_time < long_press_duration) {
+            } else if (button_pressed & (millis()-S2_start_time < long_press_duration)) {
                 state = S2;
                 button_change_time = millis();
-            } else if (button_pressed & millis()-S2_start_time >= long_press_duration) {
+            } else if (button_pressed & (millis()-S2_start_time >= long_press_duration)) {
                 state = S3;
                 button_change_time = millis();
             }

@@ -1,11 +1,50 @@
+// Import statements
 #include "ApiClient.h"
 #include <WiFiClientSecure.h>
 #include <WiFiClient.h>
 
 
-APIClient::APIClient() {}
+ApiClient::ApiClient() {}
 
-void APIClient::initialize_wifi_connection() {
+const uint16_t ApiClient::RESPONSE_TIMEOUT = 6000;
+char ApiClient::GOOGLE_SERVER[] = "googleapis.com";
+char ApiClient::TEAM_SERVER[] = "608dev-2.net";
+
+const char ApiClient::GEOLOCATION_REQUEST_PREFIX[] = "{\"wifiAccessPoints\": [";                // beginning of json body
+const char ApiClient::GEOLOCATION_REQUEST_SUFFIX[] = "]}";                                      // suffix to POST request
+const char ApiClient::GEOLOCATION_API_KEY[] = "AIzaSyAQ9SzqkHhV-Gjv-71LohsypXUH447GWX8";
+
+const int ApiClient::MAX_APS = 5;
+
+const char ApiClient::CA_CERT[] = "-----BEGIN CERTIFICATE-----\n"
+        "MIIDdTCCAl2gAwIBAgILBAAAAAABFUtaw5QwDQYJKoZIhvcNAQEFBQAwVzELMAkG\n"
+        "A1UEBhMCQkUxGTAXBgNVBAoTEEdsb2JhbFNpZ24gbnYtc2ExEDAOBgNVBAsTB1Jv\n"
+        "b3QgQ0ExGzAZBgNVBAMTEkdsb2JhbFNpZ24gUm9vdCBDQTAeFw05ODA5MDExMjAw\n"
+        "MDBaFw0yODAxMjgxMjAwMDBaMFcxCzAJBgNVBAYTAkJFMRkwFwYDVQQKExBHbG9i\n"
+        "YWxTaWduIG52LXNhMRAwDgYDVQQLEwdSb290IENBMRswGQYDVQQDExJHbG9iYWxT\n"
+        "aWduIFJvb3QgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDaDuaZ\n"
+        "jc6j40+Kfvvxi4Mla+pIH/EqsLmVEQS98GPR4mdmzxzdzxtIK+6NiY6arymAZavp\n"
+        "xy0Sy6scTHAHoT0KMM0VjU/43dSMUBUc71DuxC73/OlS8pF94G3VNTCOXkNz8kHp\n"
+        "1Wrjsok6Vjk4bwY8iGlbKk3Fp1S4bInMm/k8yuX9ifUSPJJ4ltbcdG6TRGHRjcdG\n"
+        "snUOhugZitVtbNV4FpWi6cgKOOvyJBNPc1STE4U6G7weNLWLBYy5d4ux2x8gkasJ\n"
+        "U26Qzns3dLlwR5EiUWMWea6xrkEmCMgZK9FGqkjWZCrXgzT/LCrBbBlDSgeF59N8\n"
+        "9iFo7+ryUp9/k5DPAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwIBBjAPBgNVHRMBAf8E\n"
+        "BTADAQH/MB0GA1UdDgQWBBRge2YaRQ2XyolQL30EzTSo//z9SzANBgkqhkiG9w0B\n"
+        "AQUFAAOCAQEA1nPnfE920I2/7LqivjTFKDK1fPxsnCwrvQmeU79rXqoRSLblCKOz\n"
+        "yj1hTdNGCbM+w6DjY1Ub8rrvrTnhQ7k4o+YviiY776BQVvnGCv04zcQLcFGUl5gE\n"
+        "38NflNUVyRRBnMRddWQVDf9VMOyGj/8N7yy5Y0b2qvzfvGn9LhJIZJrglfCm7ymP\n"
+        "AbEVtQwdpf5pLGkkeB6zpxxxYu7KyJesF12KwvhHhm4qxFYxldBniYUr+WymXUad\n"
+        "DKqC5JlR3XC321Y9YeRq4VzW9v493kHMB65jUr9TU/Qr6cf9tveCX4XSQRjbgbME\n"
+        "HMUfpIBvFSDJ3gyICh3WZlXi/EjJKSZp4A==\n"
+        "-----END CERTIFICATE-----\n";
+
+char ApiClient::network[] = "MIT GUEST";
+char ApiClient::password[] = "";
+uint8_t ApiClient::scanning = 1 ;//set to 1 if you'd like to scan for wifi networks (see below):
+uint8_t ApiClient::channel = 1;                                 // network channel on 2.4 GHz
+byte ApiClient::bssid[] = {0x04, 0x95, 0xE6, 0xAE, 0xDB, 0x41}; // 6 byte MAC address of AP you're targeting.
+
+void ApiClient::initialize_wifi_connection() {
     if (scanning){
         int n = WiFi.scanNetworks();
         Serial.println("scan done");
@@ -29,9 +68,9 @@ void APIClient::initialize_wifi_connection() {
     delay(100); //wait a bit (100 ms)
 
     //if using regular connection use line below:
-    WiFi.begin(network, password);
+//    WiFi.begin(network, password);
     //if using channel/mac specification for crowded bands use the following:
-    //WiFi.begin(network, password, channel, bssid);
+    WiFi.begin(network, password, channel, bssid);
     uint8_t count = 0; //count used for Wifi check times
     Serial.print("Attempting to connect to ");
     Serial.println(network);
@@ -112,7 +151,7 @@ void ApiClient::do_http_request(char *host, char *request, char *response, uint1
         count = millis();
         while (client2.available())
         { // read out remaining text (body of response)
-            char_append(response, client2.read(), OUT_BUFFER_SIZE);
+            char_append(response, client2.read(), response_size);
         }
         if (serial)
             Serial.println(response);
@@ -171,7 +210,7 @@ void ApiClient::do_https_request(char *host, char *request, char *response, uint
         count = millis();
         while (client.available())
         { // read out remaining text (body of response)
-            char_append(response, client.read(), OUT_BUFFER_SIZE);
+            char_append(response, client.read(), response_size);
         }
         if (serial)
             Serial.println(response);
@@ -248,7 +287,7 @@ void ApiClient::fetch_location(DynamicJsonDocument doc) {
         for (int i = 0; i < max_aps; ++i)
         {                                                                                                                             // for each valid access point
             uint8_t *mac = WiFi.BSSID(i);                                                                                             // get the MAC Address
-            offset += wifi_object_builder(json_body + offset, JSON_BODY_SIZE - offset, WiFi.channel(i), WiFi.RSSI(i), WiFi.BSSID(i)); // generate the query
+            offset += wifi_object_builder(json_body + offset, json_body_size - offset, WiFi.channel(i), WiFi.RSSI(i), WiFi.BSSID(i)); // generate the query
             if (i != max_aps - 1)
             {
                 offset += sprintf(json_body + offset, ","); // add comma between entries except trailing.
@@ -273,7 +312,7 @@ void ApiClient::fetch_location(DynamicJsonDocument doc) {
         Serial.println("-----------");
     }
 
-    parse_response(doc, response)
+    parse_response(doc, response);
 }
 
 void ApiClient::fetch_navigation_instructions(DynamicJsonDocument doc, char* user_id, float lat, float lon,
@@ -291,11 +330,11 @@ void ApiClient::fetch_navigation_instructions(DynamicJsonDocument doc, char* use
                      "current_floor=%d&"
                      "destination=%s&"
                      "destination_floor=%d  "
-                     "HTTP/1.1\r\n", user_id, latitude, longitude, current_floor, desination, destination_floor);
+                     "HTTP/1.1\r\n", user_id, lat, lon, current_floor, destination, destination_floor);
     strcat(request, "Host: 608dev-2.net\r\n");
     strcat(request, "\r\n");
 
     do_http_request(TEAM_SERVER, request, response, out_buffer_size, RESPONSE_TIMEOUT, true);
-    parse_response(doc, response)
+    parse_response(doc, response);
 }
 

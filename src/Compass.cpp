@@ -1,6 +1,6 @@
+// Import statements
 #include "Compass.h"
-
 
 Compass::Compass(){}
 
-Compass::update(){}
+int Compass::update(){}

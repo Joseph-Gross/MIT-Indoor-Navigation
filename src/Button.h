@@ -1,6 +1,10 @@
+// Import statements
 
 #ifndef INC_6_08_PATH_FINDING_BUTTON_H
 #define INC_6_08_PATH_FINDING_BUTTON_H
+
+#include <Arduino.h>
+#include <stdint.h>
 
 enum button_state {S0,S1,S2,S3,S4};
 

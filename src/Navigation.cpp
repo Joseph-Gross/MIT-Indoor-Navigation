@@ -1,10 +1,14 @@
+// Import statements
 #include "Navigation.h"
-#include <ArduinoJson.h>
 
-Navigation::Navigation(ApiClient client, Compass _compass){
+Navigation::Navigation(ApiClient* client, Compass* _compass, TFT_eSPI* _tft){
     apiClient = client;
     compass = _compass;
+    tft = _tft;
 }
+
+const uint16_t Navigation::NAVIGATION_UPDATE_LOOP_DURATION = 6000;
+const char Navigation::USER_ID[] = "Team8";
 
 void Navigation::fetchCurrentLocation() {
     DynamicJsonDocument doc(1024);
@@ -57,24 +61,24 @@ void Navigation::end_navigation() {
 }
 
 int Navigation::navigate() {
-    flag = 0;
+    int flag = 0;
 
     switch(state) {
-        case IDLE:
-            if(navigating) {
-                state = LOCATION;
+        case NavigationState::IDLE:
+            if(NavigationState::navigating) {
+                state = NavigationState::LOCATING;
                 display_routing_message();
             }
             break;
 
-        case LOCATING:
+        case NavigationState::LOCATING:
             fetchCurrentLocation();
-            state = ROUTING;
+            state = NavigationState::ROUTING;
             break;
 
-        case ROUTING:
+        case NavigationState::ROUTING:
             fetchNavigationInstructions();
-            state = NAVIGATING;
+            state = NavigationState::NAVIGATING;
             navigation_update_timer = millis();
 
             if (navigation_instructions.has_arrived) flag = 1;
@@ -82,12 +86,12 @@ int Navigation::navigate() {
             compass.update(navigation_instructions.dir_next_node, navigation_instructions.dist_next_node);
             break;
 
-        case NAVIGATING;
+        case NavigationState::NAVIGATING;
             if (!navigating) {
-                state = IDLE;
+                state = NavigationState::IDLE;
             }
             else if (millis() - navigation_update_timer > NAVIGATION_UPDATE_LOOP_DURATION) {
-                state = LOCATING;
+                state = NavigationState::LOCATING;
             }
             break;
     }
@@ -95,9 +99,19 @@ int Navigation::navigate() {
 }
 
 void Navigation::display_navigation_instructions() {
+    char destination_str[100];
+    char eta_str[100];
 
+    sprintf(output, "Destination: %s", navigation_instructions.destination_name);
+    sprintf(eta_str, "ETA: %f minutes", navigation_instructions.eta);
+
+    tft.fillScreen(TFT_BLACK);
+    tft.println(destination_str);
+    tft.println(eta_str);
 }
 
 void Navigation::display_routing_message() {
-
+    tft.fillScreen(TFT_BLACK);
+    tft.println("Routing...\n");
+    tft.println("Finding the best path to your destination");
 }

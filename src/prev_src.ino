@@ -1,7 +1,6 @@
 // THIS IS WHAT WE HAVE TO INTEGRATE INTO SRC probably
 
 
-
 #include <SPI.h>
 #include <TFT_eSPI.h>
 #include <WiFiClientSecure.h>
@@ -238,7 +237,7 @@ void setup()
       initMPU9250();
       // Serial.println(F("MPU9250 initialized for active data mode....")); // Initialize device for active mode read of acclerometer, gyroscope, and temperature
       // Serial.println("");
-  
+
 
       // Read the WHO_AM_I register of the magnetometer, this is a good test of communication
       byte d = readByte(AK8963_ADDRESS, AK8963_WHO_AM_I);  // Read WHO_AM_I register for AK8963
@@ -492,7 +491,7 @@ void navigate_loop()
             default:
               break;
           }
-        
+
         // based on distance go hot to cold
         // need to make sure angle is an int from 0 to 359
         // need to make sure distance is an int from 0 to 255. SCALE APPROPRIATELY!
@@ -506,7 +505,7 @@ void navigate_loop()
         }
           // ----- Housekeeping
           // digitalWrite(myLed, !digitalRead(myLed));  // Toggle led
-        count = millis(); 
+        count = millis();
     }
     get_loc_timer = millis();
 }

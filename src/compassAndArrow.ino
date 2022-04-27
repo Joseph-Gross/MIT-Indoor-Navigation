@@ -2,10 +2,10 @@
 // Goal: make an arrow spin based on an angle I give it
 // #include <TFT_eSPI.h>
 // #include <SPI.h>
-#include <Adafruit_GFX.h>    // Core graphics library
-#include <Adafruit_ST7735.h> // Hardware-specific library
+//#include <Adafruit_GFX.h>    // Core graphics library
+//#include <Adafruit_ST7735.h> // Hardware-specific library
 #include <math.h>
-// 
+
 #include <Wire.h>
 #define BACKGROUND TFT_BLACK
 #define pi 3.14159265
@@ -25,7 +25,7 @@ int LOOP_PERIOD=100;
 bool navigating;
 int32_t timer;
 
-struct Vec { 
+struct Vec {
   float x;
   float y;
 };
@@ -62,7 +62,7 @@ class Arrow {
     void update(bool navigating, float angle, int distance, float dir_next_node){
       if (navigating){
         color.r = distance;
-        color.b = 255-distance; 
+        color.b = 255-distance;
         // angle -= pi/2.0; // to make it point North // THIS WILL ACCEPT AN ANGLE OFFSET FROM EAST
         // float angle_rad = degree_to_rad*angle; // angle already in radians!
         angle-=dir_next_node;
@@ -178,7 +178,7 @@ Arrow arrow(&tft);
 /* Comment-out the following line if you are not using a 16x2 LCD */
 #define LCD2
 // #ifdef LCD2
-// #include <LiquidCrystal_I2C.h>                                      // YwRobot Arduino LCM1602 IIC V1 library  
+// #include <LiquidCrystal_I2C.h>                                      // YwRobot Arduino LCM1602 IIC V1 library
 // LiquidCrystal_I2C tft(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);      // LCD pinouts: addr,en,rw,rs,d4,d5,d6,d7,bl,blpol
 // #endif
 // #include <TFT_eSPI.h>
@@ -288,7 +288,7 @@ float Mag_x_offset = -30.0,Mag_y_offset = 365.0,Mag_z_offset = -255.17,Mag_x_sca
   is east of true north, and negative when it is to the west.
   Substitute your magnetic declination for the "Declination" shown below.
 */
-#define True_North true          // change this to "true" for True North                
+#define True_North true          // change this to "true" for True North
 float Declination = -14.23;     // substitute your magnetic declination
 
 // ----- Processing variables
@@ -1619,7 +1619,7 @@ void view_heading_SM()
   temperature = ((float) tempCount) / 333.87 + 21.0;        // Temp in degrees C
   Serial.print("        Temp(C) ");
   Serial.print(temperature, 1);
-  
+
   /*
     With these settings the filter is updating at a ~145 Hz rate using the Madgwick scheme and
     > 200 Hz using the Mahony scheme even though the display refreshes at only 2 Hz.
