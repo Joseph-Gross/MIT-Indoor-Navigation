@@ -2,13 +2,23 @@
 #ifndef INC_6_08_PATH_FINDING_DESTINATIONSELECTION_H
 #define INC_6_08_PATH_FINDING_DESTINATIONSELECTION_H
 
+const uint8_t MAX_BUILDING_NAME_LENGTH = 25;
+
+enum destination_selection_state {};
+
 
 // TODO: Define instance variables and method return types
 class DestinationSelection {
 
+    destination_selection_state state;
+    char destination[MAX_BUILDING_NAME_LENGTH];
+    int destination_floor;
 public:
     DestinationSelection();
-    void update();
+    int update();
+    void display();
+    char* get_destination();
+    int get_destination_floor();
 };
 
 

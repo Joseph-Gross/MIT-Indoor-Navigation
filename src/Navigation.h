@@ -1,12 +1,12 @@
 #include "ApiClient.h"
+#include "Compass.h"
+#include "DestinationSelection.h"
 
 #ifndef INC_6_08_PATH_FINDING_NAVIGATION_H
 #define INC_6_08_PATH_FINDING_NAVIGATION_H
 
-enum navigation_state {IDLE, LOCATING, ROUTING, NAVIGATING};
-
 const uint8_t MAX_NODE_ID_LENGTH = 7;
-const uint8_t MAX_BUILDING_NAME_LENGTH = 25;
+enum navigation_state {IDLE, LOCATING, ROUTING, NAVIGATING};
 
 struct Location {
     float latitude;
@@ -33,6 +33,7 @@ class Navigation {
 
     navigation_state state;
     ApiClient apiClient;
+    Compass compass;
 
     uint32_t navigation_update_timer;
     bool navigating;
@@ -43,16 +44,15 @@ class Navigation {
     uint8_t destination_floor;
 
     struct NavigationInstructions navigation_instructions;
+    void display_navigation_instructions();
+    void display_routing_message();
 public:
-    Navigation(ApiClient client);
+    Navigation(ApiClient client, Compass compass);
     void fetchCurrentLocation();
     void fetchNavigationInstructions();
-    void begin_navigation(float lat, float lon, uint8_t _current_floor, char* _destination, uint8_t _destination_floor);
+    void begin_navigation(uint8_t _current_floor, char* _destination, uint8_t _destination_floor);
     void end_navigation();
-    void navigate();
-    bool is_navigating();
-    NavigationInstructions get_navigation_instructions():
-    void display();
+    int navigate();
 };
 
 
