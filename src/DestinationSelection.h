@@ -15,7 +15,7 @@ class DestinationSelection {
     destination_selection_state state;
     char destination[MAX_BUILDING_NAME_LENGTH];
     int destination_floor;
-    char output[1000]; //char array buffer to hold HTTP request
+    char output[1000]; 
     char buildings[50] = "010305071113101204060208162638";
     char floors[4] = "01";
 
