@@ -172,6 +172,86 @@ void global_update(int button)
       display_start_message();
     }
     break;
+
+void global_update(int button){
+  switch (state){
+    case START:
+      if (button != 0) {
+          state = ROOM_SELECT;
+          display_destination_selection_instructions();
+      }
+      break;
+    case ROOM_SELECT:
+      /* 
+      Here we choose the building and room we want to travel to. 
+      After both a building and room are selected with short presses, 
+      we move to the Confirm Destination state.
+      */
+      destination_selector.update(button);
+
+      if (button == 2) {
+        state = CONFIRM_DESTINATION;
+        destination_floor = destination_selector.get_destination_floor();
+        destination = destination_selector.get_destination();
+        display_confirm_destination_message();
+      }
+      break;
+    case CONFIRM_DESTINATION:
+      /* 
+      we stay in this state until either a short press confirms the destination 
+      and we move to navigating, or a long press canceling the destination, 
+      and taking us back to room selection
+      */
+      if (button == 1) {
+          state = NAVIGATING;
+          navigator.begin_navigation(current_floor, destination, destination_floor);
+      }
+      if (button == 2) state = ROOM_SELECT;
+      break;
+    case NAVIGATING:
+      /* 
+      in this state, we are displaying where and how far the destination is. 
+      We stay here until the user either arrives at the destination moving us 
+      to the arrived state, or the user long presses to cancel the current 
+      navigation and moves to the Confirm Cancel Navigation state. 
+      */
+      navigation_flag = navigator.navigate();
+      if (navigation_flag == 1) {
+          state = ARRIVED;
+          navigator.end_navigation();
+      }
+      if (button == 2) state = CONFIRM_CANCEL;
+      break;
+    case CONFIRM_CANCEL:
+      /* 
+      we stay in this state until either a short press confirms that we are 
+      canceling the navigation and we move to Start state, 
+      or a long press cancels the navigation cancel.
+      */
+      if (previous_state!=CONFIRM_CANCEL){
+        tft.fillScreen(BACKGROUND);
+        tft.println("Exit navigation? Short press if yes, long press if no. \n");
+        previous_state = CONFIRM_CANCEL;
+      }
+      if (button == 1) state = START;
+      if (button == 2) state = NAVIGATING;
+      break;
+    case ARRIVED:
+      /*
+      In the arrived state, we will display an arrived 
+      message until a short press moves us back to the Start state.  
+      */
+      if (previous_state!=ARRIVED){
+        tft.fillScreen(BACKGROUND);
+        tft.println("You have arrived! Press button to return to start. \n");
+        previous_state = ARRIVED;
+      }
+      if (button != 0) {
+          state = START;
+          display_start_message();
+      }
+      break;
+>>>>>>> 986784f (Minor changes to src.ino)
   }
 }
 
