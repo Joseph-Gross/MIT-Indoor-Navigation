@@ -3,7 +3,6 @@
 #include <WiFiClientSecure.h>
 #include <WiFiClient.h>
 
-
 ApiClient::ApiClient() {}
 
 const uint16_t ApiClient::RESPONSE_TIMEOUT = 6000;
@@ -41,8 +40,7 @@ const char ApiClient::CA_CERT[] = "-----BEGIN CERTIFICATE-----\n"
 
 char ApiClient::network[] = "MIT GUEST";
 char ApiClient::password[] = "";
-//char network[] = "MIT GUEST";
-//char password[] = "";
+
 uint8_t ApiClient::scanning = 1 ;//set to 1 if you'd like to scan for wifi networks (see below):
 uint8_t ApiClient::channel = 1;                                 // network channel on 2.4 GHz
 // D4:20:B0:E3:64:E4
