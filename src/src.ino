@@ -154,13 +154,13 @@ void global_update(int button){
 
 void setup(){
   Serial.begin(115200); // Set up serial port
-
-  // Setup wifi, tft, wire, etc.
+  tft.init();                            // init screen
+  tft.setRotation(2);                    // adjust rotation
+  tft.setTextSize(1);                    // default font size, change if you want
+  tft.fillScreen(TFT_BLACK);             // fill background
+  tft.setTextColor(TFT_GREEN, TFT_BLACK); // set color of font to hot pink foreground, black background
   apiClient.initialize_wifi_connection();
   compass.initialize();
-  tft_setup(); // need to write this function. Should be extremely easy
-  // MAKE MORE SETUP FUNCTIONS
-
   display_start_message();
 }
 

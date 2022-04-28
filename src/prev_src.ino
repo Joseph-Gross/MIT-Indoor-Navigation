@@ -123,7 +123,7 @@ void setup()
     tft.setRotation(2);                    // adjust rotation
     tft.setTextSize(1);                    // default font size, change if you want
     tft.fillScreen(TFT_BLACK);             // fill background
-    tft.setTextColor(TFT_PINK, TFT_BLACK); // set color of font to hot pink foreground, black background
+    tft.setTextColor(TFT_GREEN, TFT_BLACK); // set color of font to hot pink foreground, black background
 
     // SET UP BUTTON:
     delay(100); // wait a bit (100 ms)
