@@ -236,7 +236,6 @@ class Compass {
     Vec p1, p2, p3, p4, p5, p6, p7; // the points that define the arrow
     float device_angle; //for storing the angle sensed by magnetometer
     int center_y; // only y center should change We don't need to fit that much on the screen
-    float Mag_x_offset, Mag_y_offset, Mag_z_offset, Mag_x_scale, Mag_y_scale, Mag_z_scale;
     RGB color;
     int length; // based on where we want to center the arrow we should be able to scale its length so it doesn't go off the screen.
     int width;
@@ -308,6 +307,7 @@ class Compass {
     void update(int distance, float dir_next_node);
     void initialize();
     void calibrate();
+    float Mag_x_offset, Mag_y_offset, Mag_z_offset, Mag_x_scale, Mag_y_scale, Mag_z_scale;
 };
 
 

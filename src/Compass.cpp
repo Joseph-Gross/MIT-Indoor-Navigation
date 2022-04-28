@@ -125,32 +125,43 @@ void Compass::calibrate(){
   tft->println("Record offsets");
   tft->println("& scale-factors");
   tft->println("Check serial monitor");
+  //new way:!
+  // the offsets are automatically updated
+  Mag_x_offset = magBias[0];
+  Mag_y_offset = magBias[1];
+  Mag_z_offset = magBias[2];
+  Mag_x_scale = magScale[0];
+  Mag_y_scale = magScale[1];
+  Mag_z_scale = magScale[2];
+  // the offsets are put back into the biases when we call refresh_data
 
+  // old way where we get people to change things themselves
   // ----- Message
-  Serial.println(F("------------------------------------------"));
-  Serial.println(F("Copy-&-paste the following code into your "));
-  Serial.println(F("Arduino header then delete the old code."));
-  Serial.println(F("------------------------------------------"));
-  Serial.println(F(""));
-  Serial.println(F("float"));
-  Serial.print(F("Mag_x_offset = "));
-  Serial.print(magBias[0]);
-  Serial.println(",");
-  Serial.print(F("Mag_y_offset = "));
-  Serial.print(magBias[1]);
-  Serial.println(",");
-  Serial.print(F("Mag_z_offset = "));
-  Serial.print(magBias[2]);
-  Serial.println(",");
-  Serial.print(F("Mag_x_scale = "));
-  Serial.print(magScale[0]);
-  Serial.println(",");
-  Serial.print(F("Mag_y_scale = "));
-  Serial.print(magScale[1]);
-  Serial.println(",");
-  Serial.print(F("Mag_z_scale = "));
-  Serial.print(magScale[2]);
-  Serial.println(F(";"));
+  // Serial.println(F("------------------------------------------"));
+  // Serial.println(F("Copy-&-paste the following code into your "));
+  // Serial.println(F("Arduino header then delete the old code."));
+  // Serial.println(F("------------------------------------------"));
+  // Serial.println(F(""));
+  // Serial.println(F("float"));
+  // Serial.print(F("Mag_x_offset = "));
+  // Serial.print(magBias[0]);
+  // Serial.println(",");
+  // Serial.print(F("Mag_y_offset = "));
+  // Serial.print(magBias[1]);
+  // Serial.println(",");
+  // Serial.print(F("Mag_z_offset = "));
+  // Serial.print(magBias[2]);
+  // Serial.println(",");
+  // Serial.print(F("Mag_x_scale = "));
+  // Serial.print(magScale[0]);
+  // Serial.println(",");
+  // Serial.print(F("Mag_y_scale = "));
+  // Serial.print(magScale[1]);
+  // Serial.println(",");
+  // Serial.print(F("Mag_z_scale = "));
+  // Serial.print(magScale[2]);
+  // Serial.println(F(";"));
+  // The line to change is about line 11 in compass.cpp
 }
 
 
