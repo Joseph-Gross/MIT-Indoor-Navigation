@@ -31,7 +31,7 @@ class ApiClient {
     WiFiClient client2;      // global WiFiClient Secure object
 
     uint8_t char_append(char *buff, char c, uint16_t buff_size);
-    void parse_response(DynamicJsonDocument doc, char* response);
+    void parse_response(StaticJsonDocument<500> doc, char* response);
 public:
     ApiClient();
     void initialize_wifi_connection();

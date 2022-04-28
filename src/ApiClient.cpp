@@ -11,7 +11,7 @@ char ApiClient::GOOGLE_SERVER[] = "googleapis.com";
 char ApiClient::TEAM_SERVER[] = "608dev-2.net";
 
 // const char ApiClient::GEOLOCATION_REQUEST_PREFIX[] = "{\"wifiAccessPoints\": [";                // beginning of json body
-const char GEOLOCATION_REQUEST_PREFIX[] = "{\"wifiAccessPoints\": [";  
+const char ApiClient::GEOLOCATION_REQUEST_PREFIX[] = "{\"wifiAccessPoints\": [";
 const char ApiClient::GEOLOCATION_REQUEST_SUFFIX[] = "]}";                                      // suffix to POST request
 const char ApiClient::GEOLOCATION_API_KEY[] = "AIzaSyAQ9SzqkHhV-Gjv-71LohsypXUH447GWX8";
 
@@ -282,7 +282,7 @@ int ApiClient::wifi_object_builder(char *object_string, uint32_t os_len, uint8_t
     }
 }
 
-void ApiClient::parse_response(DynamicJsonDocument doc, char* response) {
+void ApiClient::parse_response(StaticJsonDocument<500> docs, char* response) {
 
     char* json_start = strchr(response, '{');
     char* json_end = strchr(response, '}');
