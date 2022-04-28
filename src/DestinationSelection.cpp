@@ -1,4 +1,5 @@
 #include "DestinationSelection.h"
+
 void get_angle(float* x, float* y) {
   imu.readAccelData(imu.accelCount);
   *x = imu.accelCount[0] * imu.aRes;

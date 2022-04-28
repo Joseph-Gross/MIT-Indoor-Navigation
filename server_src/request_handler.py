@@ -87,3 +87,4 @@ def request_handler(request):
 
     return asdict(response)
 
+# TODO: Refactor so that building input can be one or two digits (check if numeric, convert to number, then convert to two digit string)
