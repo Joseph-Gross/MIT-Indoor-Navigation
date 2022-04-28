@@ -302,7 +302,6 @@ class Compass {
     void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
     void refresh_data();
     void calc_quaternion();
-    void compass_cal();
     int angle_return();
   public:
     Compass(TFT_eSPI* _tft, int center_y);

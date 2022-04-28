@@ -1003,52 +1003,7 @@ void Compass::calc_quaternion()
     my,                -mx,                 -mz);
 }
 
-// ------------------------
-// compass_cal()
-// ------------------------
-/* Obtain magnetometer offsets and scale-factors using Processing "compass_cal.pde" */
-void Compass::compass_cal()
-{
-  // ----- Locals
-  float
-  xPos,
-  yPos,
-  zPos;
 
-  // ----- read input character
-  if (Serial.available()) {
-    InputChar = Serial.read();
-    if ((InputChar == 's') || (InputChar == 'S')) {
-      LinkEstablished = true;
-    }
-  }
-
-  // ----- Read magnetometer registers
-  readMagData(magCount);                                  // Read the magnetometer x|y| registers
-  getMres();                                              // Get magnetometer resolution
-
-  // ----- calculate the magnetometer values (no offsets)
-  xPos = (float)magCount[0] * magCalibration[0] * mRes;   // raw mx * ASAX * 0.6 (mG)
-  yPos = (float)magCount[1] * magCalibration[1] * mRes;   // raw my * ASAY * 0.6 (mG)
-  zPos = (float)magCount[2] * magCalibration[2] * mRes;   // raw mz * ASAZ * 0.6 (mG)
-
-  // ------ create output data string
-  OutputString = String(xPos) + ',' + String(yPos) + ',' + String(zPos);
-
-  // ----- send string if link established
-  if (LinkEstablished && ((InputChar == 's') || (InputChar == 'S'))) {
-    InputChar = 'x';
-    Serial.println(OutputString);
-  }
-
-  // ----- send 'S' if link not established
-  if (micros() > Stop1) {
-    Stop1 += Timer1;
-    if (!LinkEstablished) {
-      Serial.println('S');
-    }
-  }
-}
 
 // ------------------------
 // angle_return()
