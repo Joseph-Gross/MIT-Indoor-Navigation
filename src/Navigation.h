@@ -35,9 +35,9 @@ class Navigation {
     static const char USER_ID[];
 
     NavigationState state;
-    ApiClient apiClient;
-    Compass compass;
-    TFT_eSPI tft;
+    ApiClient* apiClient;
+    Compass* compass;
+    TFT_eSPI* tft;
 
     uint32_t navigation_update_timer;
     bool navigating;
