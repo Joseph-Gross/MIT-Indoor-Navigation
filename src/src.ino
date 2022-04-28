@@ -26,13 +26,21 @@ uint8_t current_floor = 1;
 uint8_t destination_floor = 1;
 char destination[MAX_BUILDING_NAME_LENGTH] = "3";
 
-
-enum global_state {START, ROOM_SELECT, CONFIRM_DESTINATION, NAVIGATING, CONFIRM_CANCEL, ARRIVED};
+enum global_state
+{
+  START,
+  ROOM_SELECT,
+  CONFIRM_DESTINATION,
+  NAVIGATING,
+  CONFIRM_CANCEL,
+  ARRIVED
+};
 
 global_state state = START;
 global_state previous_state = ARRIVED;
 
-ApiClient apiClient();
+// ApiClient apiClient();
+ApiClient apiClient;
 Button button(BUTTON);
 Compass compass();
 Navigation navigator(&apiClient, &compass, &tft);
@@ -41,24 +49,129 @@ DestinationSelection destination_selector();
 
 int navigation_flag;
 
-void display_start_message() {
-    tft.fillScreen(BACKGROUND);
-    tft.println("Welcome to TinyTim, MIT's premiere campus navigator\n");
-    tft.println("Press the button to activate your guide and select a destination.");
+void display_start_message()
+{
+  tft.fillScreen(BACKGROUND);
+  tft.println("Welcome to TinyTim, MIT's premiere campus navigator\n");
+  tft.println("Press the button to activate your guide and select a destination.");
 }
 
-void display_confirm_destination_message() {
-    tft.fillScreen(BACKGROUND);
-    tft.println("You selected the following destination \n");
-    tft.println(destination);
-    tft.println("\nShort press to continue. Long press to reselect.\n");
+void display_confirm_destination_message()
+{
+  tft.fillScreen(BACKGROUND);
+  tft.println("You selected the following destination \n");
+  tft.println(destination);
+  tft.println("\nShort press to continue. Long press to reselect.\n");
 }
 
-void display_destination_selection_instructions() {
-    tft.fillScreen(BACKGROUND);
-    tft.println("Tilt screen for number scrolling. \n");
-    tft.println("Short press to confirm destination. \n");
+void display_destination_selection_instructions()
+{
+  tft.fillScreen(BACKGROUND);
+  tft.println("Tilt screen for number scrolling. \n");
+  tft.println("Short press to confirm destination. \n");
 }
+
+void global_update(int button)
+{
+  switch (state)
+  {
+  case START:
+    if (button != 0)
+    {
+      state = ROOM_SELECT;
+      display_destination_selection_instructions();
+    }
+    break;
+
+  case ROOM_SELECT:
+    /*
+    Here we choose the building and room we want to travel to.
+    After both a building and room are selected with short presses,
+    we move to the Confirm Destination state.
+    */
+    destination_selector.update();
+
+    // short pressed is used within destination_selector.update()
+    if (button == 2)
+    {
+      state = CONFIRM_DESTINATION;
+      destination_floor = destination_selector.get_destination_floor();
+      destination = destination_selector.get_destination();
+      display_confirm_destination_message();
+    }
+    break;
+
+  case CONFIRM_DESTINATION:
+    /*
+    we stay in this state until either a short press confirms the destination
+    and we move to navigating, or a long press canceling the destination,
+    and taking us back to room selection
+    */
+    if (button == 1)
+    {
+      state = NAVIGATING;
+      navigator.begin_navigation(current_floor, destination, destination_floor);
+    }
+    if (button == 2)
+      state = ROOM_SELECT;
+    break;
+
+  case NAVIGATING:
+    /*
+    in this state, we are displaying where and how far the destination is.
+    We stay here until the user either arrives at the destination moving us
+    to the arrived state, or the user long presses to cancel the current
+    navigation and moves to the Confirm Cancel Navigation state.
+    */
+    navigation_flag = navigator.navigate();
+    if (navigation_flag == 1)
+    {
+      state = ARRIVED;
+      navigator.end_navigation();
+    }
+
+    // NOTE: navigator.navigate() calls compass.update(dir, dist) which should call compass.display()
+    if (button == 2)
+      state = CONFIRM_CANCEL;
+
+    break;
+
+  case CONFIRM_CANCEL:
+    /*
+    we stay in this state until either a short press confirms that we are
+    canceling the navigation and we move to Start state,
+    or a long press cancels the navigation cancel.
+    */
+    if (previous_state != CONFIRM_CANCEL)
+    {
+      tft.fillScreen(BACKGROUND);
+      tft.println("Exit navigation? Short press if yes, long press if no. \n");
+      previous_state = CONFIRM_CANCEL;
+    }
+    if (button == 1)
+      state = START;
+    if (button == 2)
+      state = NAVIGATING;
+
+    break;
+
+  case ARRIVED:
+    /*
+    In the arrived state, we will display an arrived
+    message until a short press moves us back to the Start state.
+    */
+    if (previous_state != ARRIVED)
+    {
+      tft.fillScreen(BACKGROUND);
+      tft.println("You have arrived! Press button to return to start. \n");
+      previous_state = ARRIVED;
+    }
+    if (button != 0)
+    {
+      state = START;
+      display_start_message();
+    }
+    break;
 
 void global_update(int button){
   switch (state){
@@ -67,25 +180,22 @@ void global_update(int button){
           state = ROOM_SELECT;
           display_destination_selection_instructions();
       }
-    break;
-
+      break;
     case ROOM_SELECT:
       /* 
       Here we choose the building and room we want to travel to. 
       After both a building and room are selected with short presses, 
       we move to the Confirm Destination state.
       */
-      destination_selector.update();
+      destination_selector.update(button);
 
-      // short pressed is used within destination_selector.update()
       if (button == 2) {
         state = CONFIRM_DESTINATION;
         destination_floor = destination_selector.get_destination_floor();
         destination = destination_selector.get_destination();
         display_confirm_destination_message();
       }
-    break;
-
+      break;
     case CONFIRM_DESTINATION:
       /* 
       we stay in this state until either a short press confirms the destination 
@@ -97,9 +207,7 @@ void global_update(int button){
           navigator.begin_navigation(current_floor, destination, destination_floor);
       }
       if (button == 2) state = ROOM_SELECT;
-    break;
-
-
+      break;
     case NAVIGATING:
       /* 
       in this state, we are displaying where and how far the destination is. 
@@ -112,12 +220,8 @@ void global_update(int button){
           state = ARRIVED;
           navigator.end_navigation();
       }
-
-      // NOTE: navigator.navigate() calls compass.update(dir, dist) which should call compass.display()
       if (button == 2) state = CONFIRM_CANCEL;
-
       break;
-
     case CONFIRM_CANCEL:
       /* 
       we stay in this state until either a short press confirms that we are 
@@ -131,9 +235,7 @@ void global_update(int button){
       }
       if (button == 1) state = START;
       if (button == 2) state = NAVIGATING;
-
       break;
-
     case ARRIVED:
       /*
       In the arrived state, we will display an arrived 
@@ -149,23 +251,25 @@ void global_update(int button){
           display_start_message();
       }
       break;
+>>>>>>> 986784f (Minor changes to src.ino)
   }
 }
 
-
-void setup(){
-  Serial.begin(115200); // Set up serial port
-  tft.init();                            // init screen
-  tft.setRotation(2);                    // adjust rotation
-  tft.setTextSize(1);                    // default font size, change if you want
-  tft.fillScreen(TFT_BLACK);             // fill background
+void setup()
+{
+  Serial.begin(115200);                   // Set up serial port
+  tft.init();                             // init screen
+  tft.setRotation(2);                     // adjust rotation
+  tft.setTextSize(1);                     // default font size, change if you want
+  tft.fillScreen(TFT_BLACK);              // fill background
   tft.setTextColor(TFT_GREEN, TFT_BLACK); // set color of font to hot pink foreground, black background
   apiClient.initialize_wifi_connection();
   compass.initialize();
   display_start_message();
 }
 
-void loop(){
+void loop()
+{
   int button_flag = button.update();
   global_update(button_flag);
 }

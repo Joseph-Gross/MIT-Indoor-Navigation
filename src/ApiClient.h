@@ -21,8 +21,8 @@ class ApiClient {
     static const int MAX_APS;
     static const char CA_CERT[];
 
-    static char network[];
-    static char password[];
+    // static char network[];
+    // static char password[];
     static uint8_t scanning;
     static uint8_t channel;
     static byte bssid[];
@@ -38,8 +38,8 @@ public:
     void do_http_request(char *host, char *request, char *response, uint16_t response_size, uint16_t response_timeout, uint8_t serial);
     void do_https_request(char *host, char *request, char *response, uint16_t response_size, uint16_t response_timeout, uint8_t serial);
     int wifi_object_builder(char *object_string, uint32_t os_len, uint8_t channel, int signal_strength, uint8_t *mac_address);
-    void fetch_location(DynamicJsonDocument doc);
-    void fetch_navigation_instructions(DynamicJsonDocument doc, char* user_id, float lat, float lon,
+    void fetch_location(StaticJsonDocument<500> doc);
+    void fetch_navigation_instructions(StaticJsonDocument<500> doc, char* user_id, float lat, float lon,
                                        uint8_t current_floor, char* destination, uint8_t destination_floor);
 };
 
