@@ -203,7 +203,7 @@
   #define TASK 7 // not a real task and nothing will happen hopefully
 */
 
-#define center_x = 128/2;
+#define center_x 128/2;
 
 #define TASK 7 
 
@@ -318,7 +318,7 @@ class Compass {
     void compass_cal();
     int angle_return();
   public:
-    Compass(TFT_eSPI* _tft, int center_y = 80);
+    Compass(TFT_eSPI* _tft, int center_y);
     void update(int distance, float dir_next_node);
     void initialize();
 };

@@ -1,7 +1,7 @@
 // Import statements
 #include "Compass.h"
 
-Compass::Compass(TFT_eSPI* _tft, int center_y = 80){
+Compass::Compass(TFT_eSPI* _tft, int center_y){
   tft = _tft;
   center.x = center_x;
   center.y = center_y; // only y center should change We don't need to fit that much on the screen
@@ -21,10 +21,21 @@ Compass::Compass(TFT_eSPI* _tft, int center_y = 80){
   Ascale = AFS_2G;
   Mscale = MFS_14BITS;                           // Choose either 14-bit or 16-bit magnetometer resolution (AK8963=14-bits)
   Mmode = 0x02;                                  // 2 for 8 Hz, 6 for 100 Hz continuous magnetometer data read
-  magCalibration[3] = {0, 0, 0},
-                              magBias[3] = {0, 0, 0},
-                                          magScale[3] = {0, 0, 0};    // Factory mag calibration, mag offset , mag scale-factor
-  gyroBias[3] = {0, 0, 0}, accelBias[3] = {0, 0, 0};        // Bias corrections for gyro and accelerometer
+  magCalibration[0] = 0;
+  magCalibration[1] = 0;
+  magCalibration[2] = 0;
+  magBias[0] = 0;
+  magBias[1] = 0;
+  magBias[2] = 0;
+  magScale[0] = 0;
+  magScale[1] = 0;  
+  magScale[2] = 0;      // Factory mag calibration, mag offset , mag scale-factor
+  gyroBias[0] = 0;
+  gyroBias[1] = 0;
+  gyroBias[2] = 0;
+  accelBias[0] = 0;
+  accelBias[1] = 0; 
+  accelBias[2] = 0;         // Bias corrections for gyro and accelerometer
   // ----- global constants for 9 DoF fusion and AHRS (Attitude and Heading Reference System)
   GyroMeasError = PI * (40.0f / 180.0f);        // gyroscope measurement error in rads/s (start at 40 deg/s)
   GyroMeasDrift = PI * (0.0f  / 180.0f);        // gyroscope measurement drift in rad/s/s (start at 0.0 deg/s/s)
@@ -34,8 +45,14 @@ Compass::Compass(TFT_eSPI* _tft, int center_y = 80){
   deltat = 0.0f, sum = 0.0f;                    // integration interval for both filter schemes
   lastUpdate = 0, firstUpdate = 0;      // used to calculate integration interval
   Now = 0;                              // used to calculate integration interval
-  q[4] = {1.0f, 0.0f, 0.0f, 0.0f};              // vector to hold quaternion
-  eInt[3] = {0.0f, 0.0f, 0.0f};                 // vector to hold integral error for Mahony method
+  q[0]=1.0f;
+  q[1] = 0.0f;  
+  q[2] = 0.0f;           // vector to hold quaternion
+  q[3] = 0.0f;
+  eInt[1] = 0.0f;  
+  eInt[2] = 0.0f;     
+  eInt[3] = 0.0f;            // vector to hold integral error for Mahony method
+  ax=0, ay=0, az=0, gx=0, gy=0, gz=0, mx=0, my=0, mz=0; 
   length = 70;
   width = 12;
   int left_limit = 0; //left side of screen limit
@@ -53,7 +70,7 @@ void Compass::update(int distance, float dir_next_node){
   color.b = 255-distance;
   // angle -= pi/2.0; // to make it point North // THIS WILL ACCEPT AN ANGLE OFFSET FROM EAST
   // float angle_rad = degree_to_rad*angle; // angle already in radians!
-  angle-=dir_next_node;
+  device_angle-=dir_next_node;
   float hl = length/2.0;
   float hw = width/2.0;
   float s = sin(device_angle);
@@ -907,7 +924,7 @@ void Compass::refresh_data()
 // calc_quaternion()
 // ------------------------
 /* Send current MPU-9250 register values to Mahony quaternion filter */
-void calc_quaternion()
+void Compass::calc_quaternion()
 {
   Now = micros();
   deltat = ((Now - lastUpdate) / 1000000.0f); // set integration time by time elapsed since last filter update
@@ -1008,7 +1025,7 @@ int Compass::angle_return()
 }
 
 
-void Compass::intialize(){
+void Compass::initialize(){
     Wire.begin();
     Wire.setClock(400000);                            // 400 kbit/sec I2C speed
     // while (!Serial);                                  // required for Feather M4 Express
