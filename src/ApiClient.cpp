@@ -39,26 +39,22 @@ const char ApiClient::CA_CERT[] = "-----BEGIN CERTIFICATE-----\n"
         "HMUfpIBvFSDJ3gyICh3WZlXi/EjJKSZp4A==\n"
         "-----END CERTIFICATE-----\n";
 
-// char ApiClient::network[] = "MIT GUEST";
-// char ApiClient::password[] = "";
-char network[] = "MIT GUEST";
-char password[] = "";
+char ApiClient::network[] = "MIT GUEST";
+char ApiClient::password[] = "";
+//char network[] = "MIT GUEST";
+//char password[] = "";
 uint8_t ApiClient::scanning = 1 ;//set to 1 if you'd like to scan for wifi networks (see below):
 uint8_t ApiClient::channel = 1;                                 // network channel on 2.4 GHz
 // D4:20:B0:E3:64:E4
 byte ApiClient::bssid[] = {0xD4, 0x20, 0xB0, 0xE3, 0x64, 0xE4}; // 6 byte MAC address of AP you're targeting.
 
-const uint16_t in_buffer_size = 3500;  // size of buffer to hold HTTP request
-const uint16_t out_buffer_size = 1000; // size of buffer to hold HTTP response
-const uint16_t json_body_size = 3000;
+char ApiClient::request[IN_BUFFER_SIZE];
+char ApiClient::response[OUT_BUFFER_SIZE]; // char array buffer to hold HTTP request
+char ApiClient::json_body[JSON_BODY_SIZE];
 
-char request[in_buffer_size];
-char response[out_buffer_size]; // char array buffer to hold HTTP request
-char json_body[json_body_size];
-
-int max_aps;
-int offset = sprintf(json_body, "%s", GEOLOCATION_REQUEST_PREFIX);
-int len;
+int ApiClient::max_aps;
+int ApiClient::offset = sprintf(json_body, "%s", GEOLOCATION_REQUEST_PREFIX);
+int ApiClient::len;
 
 void ApiClient::initialize_wifi_connection() {
     if (scanning){
@@ -84,7 +80,7 @@ void ApiClient::initialize_wifi_connection() {
                 for (int i = 0; i < max_aps; ++i)
                 {                                                                                                                             // for each valid access point
                     uint8_t *mac = WiFi.BSSID(i);                                                                                             // get the MAC Address
-                    offset += wifi_object_builder(json_body + offset, json_body_size - offset, WiFi.channel(i), WiFi.RSSI(i), WiFi.BSSID(i)); // generate the query
+                    offset += wifi_object_builder(json_body + offset, JSON_BODY_SIZE - offset, WiFi.channel(i), WiFi.RSSI(i), WiFi.BSSID(i)); // generate the query
                     if (i != max_aps - 1)
                     {
                         offset += sprintf(json_body + offset, ","); // add comma between entries except trailing.
@@ -294,33 +290,6 @@ void ApiClient::parse_response(StaticJsonDocument<500> doc, char* response) {
 }
 
 void ApiClient::fetch_location(StaticJsonDocument<500> doc) {
-    // const uint16_t in_buffer_size = 3500;  // size of buffer to hold HTTP request
-    // const uint16_t out_buffer_size = 1000; // size of buffer to hold HTTP response
-    // const uint16_t json_body_size = 3000;
-
-    // char request[in_buffer_size];
-    // char response[out_buffer_size]; // char array buffer to hold HTTP request
-    // char json_body[json_body_size];
-
-    // int offset = sprintf(json_body, "%s", GEOLOCATION_REQUEST_PREFIX);
-    // int n = WiFi.scanNetworks(); // run a new scan. could also modify to use original scan from setup so quicker (though older info)
-    // Serial.println("scan done");
-    // if (n == 0)
-    // {
-    //     Serial.println("no networks found");
-    // }
-    // else
-    // {
-    //     int max_aps = max(min(MAX_APS, n), 1);
-    //     for (int i = 0; i < max_aps; ++i)
-    //     {                                                                                                                             // for each valid access point
-    //         uint8_t *mac = WiFi.BSSID(i);                                                                                             // get the MAC Address
-    //         offset += wifi_object_builder(json_body + offset, json_body_size - offset, WiFi.channel(i), WiFi.RSSI(i), WiFi.BSSID(i)); // generate the query
-    //         if (i != max_aps - 1)
-    //         {
-    //             offset += sprintf(json_body + offset, ","); // add comma between entries except trailing.
-    //         }
-    //     }
         sprintf(json_body + offset, "%s", GEOLOCATION_REQUEST_SUFFIX);
         Serial.println(json_body);
         int len = strlen(json_body);
@@ -334,7 +303,7 @@ void ApiClient::fetch_location(StaticJsonDocument<500> doc) {
         offset += sprintf(request + offset, "cache-control: no-cache\r\n");
         offset += sprintf(request + offset, "Content-Length: %d\r\n\r\n", len);
         offset += sprintf(request + offset, "%s\r\n", json_body);
-        do_https_request(GOOGLE_SERVER, request, response, out_buffer_size, RESPONSE_TIMEOUT, false);
+        do_https_request(GOOGLE_SERVER, request, response, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, false);
         Serial.println("-----------");
         Serial.println(response);
         Serial.println("-----------");
@@ -345,11 +314,6 @@ void ApiClient::fetch_location(StaticJsonDocument<500> doc) {
 
 void ApiClient::fetch_navigation_instructions(StaticJsonDocument<500> doc, char* user_id, float lat, float lon,
                                               uint8_t current_floor, char* destination, uint8_t destination_floor) {
-    // const uint16_t in_buffer_size = 3500;  // size of buffer to hold HTTP request
-    // const uint16_t out_buffer_size = 5000; // size of buffer to hold HTTP response
-
-    // char request[in_buffer_size];
-    // char response[out_buffer_size]; // char array buffer to hold HTTP request
 
     sprintf(request, "GET https://608dev-2.net/sandbox/sc/team8/server_src/request_handler.py?"
                      "user_id=%s&"
@@ -362,7 +326,7 @@ void ApiClient::fetch_navigation_instructions(StaticJsonDocument<500> doc, char*
     strcat(request, "Host: 608dev-2.net\r\n");
     strcat(request, "\r\n");
 
-    do_http_request(TEAM_SERVER, request, response, out_buffer_size, RESPONSE_TIMEOUT, true);
+    do_http_request(TEAM_SERVER, request, response, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
     Serial.println("nav response: ");
     Serial.print(response);
     parse_response(doc, response);

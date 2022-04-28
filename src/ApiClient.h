@@ -8,6 +8,10 @@
 #include <WiFiClientSecure.h>
 #include <WiFiClient.h>
 
+const uint16_t IN_BUFFER_SIZE = 3500;  // size of buffer to hold HTTP request
+const uint16_t OUT_BUFFER_SIZE = 1000; // size of buffer to hold HTTP response
+const uint16_t JSON_BODY_SIZE = 3000;
+
 class ApiClient {
 
     static const uint16_t RESPONSE_TIMEOUT;
@@ -21,14 +25,22 @@ class ApiClient {
     static const int MAX_APS;
     static const char CA_CERT[];
 
-    // static char network[];
-    // static char password[];
+    static char network[];
+    static char password[];
     static uint8_t scanning;
     static uint8_t channel;
     static byte bssid[];
 
     WiFiClientSecure client; // global WiFiClient Secure object
     WiFiClient client2;      // global WiFiClient Secure object
+
+    static char request[IN_BUFFER_SIZE];
+    static char response[OUT_BUFFER_SIZE]; // char array buffer to hold HTTP request
+    static char json_body[JSON_BODY_SIZE];
+
+    static int max_aps;
+    static int offset;
+    static int len;
 
     uint8_t char_append(char *buff, char c, uint16_t buff_size);
     void parse_response(StaticJsonDocument<500> doc, char* response);

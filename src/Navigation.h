@@ -4,10 +4,12 @@
 #define INC_6_08_PATH_FINDING_NAVIGATION_H
 
 #include "ApiClient.h"
+#include <ArduinoJson.h>
 #include "Compass.h"
 #include "DestinationSelection.h"
 #include <TFT_eSPI.h>
 
+const uint8_t MAX_BUILDING_NAME_LENGTH = 10;
 const uint8_t MAX_NODE_ID_LENGTH = 7;
 enum class NavigationState {IDLE, LOCATING, ROUTING, NAVIGATING};
 
@@ -32,7 +34,7 @@ struct NavigationInstructions {
 
 class Navigation {
     static const uint16_t NAVIGATION_UPDATE_LOOP_DURATION;
-    static const char USER_ID[];
+    static char USER_ID[];
 
     NavigationState state;
     ApiClient* apiClient;
@@ -52,8 +54,8 @@ class Navigation {
     void display_routing_message();
 public:
     Navigation(ApiClient* client, Compass* _compass, TFT_eSPI* _tft);
-    void fetchCurrentLocation();
-    void fetchNavigationInstructions();
+    void fetch_current_location();
+    void fetch_navigation_instructions();
     void begin_navigation(uint8_t _current_floor, char* _destination, uint8_t _destination_floor);
     void end_navigation();
     int navigate();
