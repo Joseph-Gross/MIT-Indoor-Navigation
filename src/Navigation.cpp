@@ -11,7 +11,7 @@ const uint16_t Navigation::NAVIGATION_UPDATE_LOOP_DURATION = 6000;
 const char Navigation::USER_ID[] = "Team8";
 
 void Navigation::fetchCurrentLocation() {
-    DynamicJsonDocument doc(1024);
+    StaticJsonDocument doc(500);
     apiClient.fetchCurrentLocation(doc);
 
     float latitude = doc["lat"];
@@ -20,7 +20,7 @@ void Navigation::fetchCurrentLocation() {
 }
 
 void Navigation::fetchNavigationInstructions() {
-    DynamicJsonDocument doc(1024);
+    StaticJsonDocument doc(500);
     apiClient.fetchNavigationInstructions(doc, user_id, location.latitude, location.longitude, current_floor,
                                           destination, destination_floor);
 
