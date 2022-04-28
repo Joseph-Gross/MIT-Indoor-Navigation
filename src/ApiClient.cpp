@@ -282,7 +282,7 @@ int ApiClient::wifi_object_builder(char *object_string, uint32_t os_len, uint8_t
     }
 }
 
-void ApiClient::parse_response(StaticJsonDocument<500> docs, char* response) {
+void ApiClient::parse_response(StaticJsonDocument<500> doc, char* response) {
 
     char* json_start = strchr(response, '{');
     char* json_end = strchr(response, '}');

@@ -71,13 +71,10 @@ void display_destination_selection_instructions()
   tft.println("Short press to confirm destination. \n");
 }
 
-void global_update(int button)
-{
-  switch (state)
-  {
+void global_update(int button) {
+  switch (state){
   case START:
-    if (button != 0)
-    {
+    if (button != 0){
       state = ROOM_SELECT;
       display_destination_selection_instructions();
     }
@@ -92,8 +89,7 @@ void global_update(int button)
     destination_selector.update();
 
     // short pressed is used within destination_selector.update()
-    if (button == 2)
-    {
+    if (button == 2){
       state = CONFIRM_DESTINATION;
       destination_floor = destination_selector.get_destination_floor();
       destination = destination_selector.get_destination();
@@ -107,8 +103,7 @@ void global_update(int button)
     and we move to navigating, or a long press canceling the destination,
     and taking us back to room selection
     */
-    if (button == 1)
-    {
+    if (button == 1){
       state = NAVIGATING;
       navigator.begin_navigation(current_floor, destination, destination_floor);
     }
@@ -124,8 +119,7 @@ void global_update(int button)
     navigation and moves to the Confirm Cancel Navigation state.
     */
     navigation_flag = navigator.navigate();
-    if (navigation_flag == 1)
-    {
+    if (navigation_flag == 1){
       state = ARRIVED;
       navigator.end_navigation();
     }
@@ -142,8 +136,7 @@ void global_update(int button)
     canceling the navigation and we move to Start state,
     or a long press cancels the navigation cancel.
     */
-    if (previous_state != CONFIRM_CANCEL)
-    {
+    if (previous_state != CONFIRM_CANCEL){
       tft.fillScreen(BACKGROUND);
       tft.println("Exit navigation? Short press if yes, long press if no. \n");
       previous_state = CONFIRM_CANCEL;
@@ -160,8 +153,7 @@ void global_update(int button)
     In the arrived state, we will display an arrived
     message until a short press moves us back to the Start state.
     */
-    if (previous_state != ARRIVED)
-    {
+    if (previous_state != ARRIVED){
       tft.fillScreen(BACKGROUND);
       tft.println("You have arrived! Press button to return to start. \n");
       previous_state = ARRIVED;
@@ -251,12 +243,10 @@ void global_update(int button){
           display_start_message();
       }
       break;
->>>>>>> 986784f (Minor changes to src.ino)
   }
 }
 
-void setup()
-{
+void setup() {
   Serial.begin(115200);                   // Set up serial port
   tft.init();                             // init screen
   tft.setRotation(2);                     // adjust rotation
@@ -268,8 +258,7 @@ void setup()
   display_start_message();
 }
 
-void loop()
-{
+void loop(){
   int button_flag = button.update();
   global_update(button_flag);
 }
