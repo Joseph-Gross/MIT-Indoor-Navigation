@@ -39,13 +39,12 @@ enum global_state
 global_state state = START;
 global_state previous_state = ARRIVED;
 
-// ApiClient apiClient();
 ApiClient apiClient;
 Button button(BUTTON);
 Compass compass(&tft, 80);
 Navigation navigator(&apiClient, &compass, &tft);
 
-//DestinationSelection destination_selector();
+DestinationSelection destination_selector();
 
 int navigation_flag;
 
@@ -85,12 +84,12 @@ void global_update(int button){
       After both a building and room are selected with short presses, 
       we move to the Confirm Destination state.
       */
-//      destination_selector.update(button);
+      destination_selector.update(button);
 
       if (button == 2) {
         state = CONFIRM_DESTINATION;
-//        destination_floor = destination_selector.get_destination_floor();
-//        destination = destination_selector.get_destination();
+        destination_floor = destination_selector.get_destination_floor();
+        destination = destination_selector.get_destination();
         display_confirm_destination_message();
       }
       break;
