@@ -76,8 +76,9 @@ void global_update(int button){
       we move to the Confirm Destination state.
       */
       destination_selector.update();
-      
-      if (button != 0) {
+
+      // short pressed is used within destination_selector.update()
+      if (button == 2) {
         state = CONFIRM_DESTINATION;
         destination_floor = destination_selector.get_destination_floor();
         destination = destination_selector.get_destination();
