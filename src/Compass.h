@@ -180,26 +180,13 @@
 #define Kp 40.0f                                    // Kp proportional feedback parameter in Mahony filter and fusion scheme
 #define Ki 0.0f                                     // Ki integral parameter in Mahony filter and fusion scheme
 // ----- user offsets and scale-factors
-/*
-  Each of the following values must be overwritten with the offsets and scale - factors for
-  YOUR location otherwise you will have to "tumble" your compass every time you switch it on.
-  here are two methods for obtaining this data :
 
-  Method 2 :
-  ----------
-  Set "#define TASK 2". Upload this change to your Arduino.
-  Run Processing "compass_cal.pde" and follow the on - screen instructions.
-  Replace (copy - & - paste) the values below with the offsets and scale - factors that appear on your computer screen.
-  Close Processing "compass_cal.pde"
-  Once you have done this select one of  TASKs 3, 4, or 5 and upload these changes to your Arduino
-  This method is more accurate, and more consistent, than method 1
-*/
 
 
 // ----- Select a TASK
 /*
   Choose a TASK from the following list:
-  #define TASK 2    // Calibrate once ... using external "compass_cal.pde" software
+  #define TASK 1    // Calibrate once ... using onboard code
   #define TASK 7 // not a real task and nothing will happen hopefully
 */
 
@@ -315,6 +302,7 @@ class Compass {
     void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
     void refresh_data();
     void calc_quaternion();
+    void calibrate();
     void compass_cal();
     int angle_return();
   public:

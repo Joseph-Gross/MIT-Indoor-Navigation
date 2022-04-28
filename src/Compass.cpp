@@ -96,10 +96,62 @@ void Compass::update(int distance, float dir_next_node){
 
 
 // we should have a callibrate function. It will tell the user to tumble for thirty seconds and then it will automatically update the offsets. but this will be for next week.
-// void Compass::callibrate(int distance, float dir_next_node){
-//   // after figuring out angles, calls the inner update, which takes as arguments float device_angle, int distance, float dir_next_node
+void Compass::calibrate(){
+  // after figuring out angles, calls the inner update, which takes as arguments float device_angle, int distance, float dir_next_node
+  tft->fillScreen(BACKGROUND);
+  tft->setCursor(0, 0);
+  tft->println("Tumble compass");
+  tft->setCursor(10, 0);
+  tft->println("for 30 seconds");
 
-// }
+  // ----- Calculate magnetometer offsets & scale-factors
+  tft->println("Magnetometer calibration ...");
+  tft->println("Tumble/wave device for 30 seconds in a figure 8");
+  delay(2000);
+  magCalMPU9250(magBias, magScale);
+
+  // tft->clear();
+  tft->fillScreen(BACKGROUND);
+  tft->setCursor(0, 0);
+  tft->print(F("Stop tumbling"));
+
+  Serial.println(F("Stop tumbling"));
+  Serial.println("");
+  delay(4000);
+
+  // tft->clear();
+  tft->fillScreen(BACKGROUND);
+  tft->setCursor(0, 0);
+  tft->println("Record offsets");
+  tft->println("& scale-factors");
+  tft->println("Check serial monitor");
+
+  // ----- Message
+  Serial.println(F("------------------------------------------"));
+  Serial.println(F("Copy-&-paste the following code into your "));
+  Serial.println(F("Arduino header then delete the old code."));
+  Serial.println(F("------------------------------------------"));
+  Serial.println(F(""));
+  Serial.println(F("float"));
+  Serial.print(F("Mag_x_offset = "));
+  Serial.print(magBias[0]);
+  Serial.println(",");
+  Serial.print(F("Mag_y_offset = "));
+  Serial.print(magBias[1]);
+  Serial.println(",");
+  Serial.print(F("Mag_z_offset = "));
+  Serial.print(magBias[2]);
+  Serial.println(",");
+  Serial.print(F("Mag_x_scale = "));
+  Serial.print(magScale[0]);
+  Serial.println(",");
+  Serial.print(F("Mag_y_scale = "));
+  Serial.print(magScale[1]);
+  Serial.println(",");
+  Serial.print(F("Mag_z_scale = "));
+  Serial.print(magScale[2]);
+  Serial.println(F(";"));
+}
 
 
 
