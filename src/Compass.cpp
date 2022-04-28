@@ -16,7 +16,7 @@ Compass::Compass(TFT_eSPI* _tft, int center_y = 80){
   OutputString = "";         // outgoing data string to Processing
   // ----- software timer
   Timer1 = 500000L;   // 500mS loop ... used when sending data to to Processing
-  Stop1=0;              // Timer1 stops when micros() exceeds this value
+  Stop1=0;       // Timer1 stops when micros() exceeds this value
   Gscale = GFS_250DPS;
   Ascale = AFS_2G;
   Mscale = MFS_14BITS;                           // Choose either 14-bit or 16-bit magnetometer resolution (AK8963=14-bits)

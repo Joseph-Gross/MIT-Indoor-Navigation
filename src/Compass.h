@@ -244,6 +244,7 @@ enum M_MODE {
 // TODO: Define instance variables and method return types
 class Compass {
   private:
+    TFT_eSPI* tft;
     Vec center; // for display
     Vec p1, p2, p3, p4, p5, p6, p7; // the points that define the arrow
     float device_angle; //for storing the angle sensed by magnetometer
