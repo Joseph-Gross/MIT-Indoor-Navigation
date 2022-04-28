@@ -9,6 +9,7 @@
 #include <math.h>
 #include <Wire.h>
 #include <SPI.h>
+#include <TFT_eSPI.h>
 
 // #define BACKGROUND TFT_BLACK // Already defined?
 #define pi 3.14159265
