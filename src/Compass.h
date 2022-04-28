@@ -12,6 +12,7 @@
 
 // #define BACKGROUND TFT_BLACK // Already defined?
 #define pi 3.14159265
+#define degree_to_rad = 0.0174532925; // pi/180.0
 #define root3over2 0.8660254
 #define root3 1.7320508
 
@@ -177,6 +178,22 @@
 //#define Kp 2.0f * 5.0f                            // original Kp proportional feedback parameter in Mahony filter and fusion scheme
 #define Kp 40.0f                                    // Kp proportional feedback parameter in Mahony filter and fusion scheme
 #define Ki 0.0f                                     // Ki integral parameter in Mahony filter and fusion scheme
+// ----- user offsets and scale-factors
+/*
+  Each of the following values must be overwritten with the offsets and scale - factors for
+  YOUR location otherwise you will have to "tumble" your compass every time you switch it on.
+  here are two methods for obtaining this data :
+
+  Method 2 :
+  ----------
+  Set "#define TASK 2". Upload this change to your Arduino.
+  Run Processing "compass_cal.pde" and follow the on - screen instructions.
+  Replace (copy - & - paste) the values below with the offsets and scale - factors that appear on your computer screen.
+  Close Processing "compass_cal.pde"
+  Once you have done this select one of  TASKs 3, 4, or 5 and upload these changes to your Arduino
+  This method is more accurate, and more consistent, than method 1
+*/
+
 
 // ----- Select a TASK
 /*
@@ -185,6 +202,7 @@
   #define TASK 7 // not a real task and nothing will happen hopefully
 */
 
+#define center_x = 128/2;
 
 #define TASK 7 
 
@@ -197,10 +215,86 @@ struct RGB { //looks like this won't actually be used since tft.stroke(r,g,b) is
   int g;
   int b;
 };
+// ----- Set initial input parameters
+enum Ascale {
+  AFS_2G = 0,
+  AFS_4G,
+  AFS_8G,
+  AFS_16G
+};
+
+enum Gscale {
+  GFS_250DPS = 0,
+  GFS_500DPS,
+  GFS_1000DPS,
+  GFS_2000DPS
+};
+
+enum Mscale {
+  MFS_14BITS = 0,               // 0.6 mG per LSB;
+  MFS_16BITS                    // 0.15 mG per LSB
+};
+
+enum M_MODE {
+  M_8HZ = 0x02,                 // 8 Hz ODR (output data rate) update
+  M_100HZ = 0x06                // 100 Hz continuous magnetometer
+};
 
 // TODO: Define instance variables and method return types
 class Compass {
   private:
+    Vec center; // for display
+    Vec p1, p2, p3, p4, p5, p6, p7; // the points that define the arrow
+    float device_angle; //for storing the angle sensed by magnetometer
+    int center_y; // only y center should change We don't need to fit that much on the screen
+    float Mag_x_offset, Mag_y_offset, Mag_z_offset, Mag_x_scale, Mag_y_scale, Mag_z_scale;
+    RGB color;
+    int length; // based on where we want to center the arrow we should be able to scale its length so it doesn't go off the screen.
+    int width;
+    int left_limit; //left side of screen limit
+    int right_limit; //right side of screen limit
+    int top_limit; //top of screen limit
+    int bottom_limit; //bottom of screen limit
+    // ----- Magnetic declination
+    /*
+      The magnetic declination for Lower Hutt, New Zealand is +22.5833 degrees
+      Obtain your magnetic declination from http://www.magnetic-declination.com/
+      By convention, declination is positive when magnetic north
+      is east of true north, and negative when it is to the west.
+      Substitute your magnetic declination for the "Declination" shown below.
+    */
+    float Declination;
+    char InputChar;
+    bool LinkEstablished;
+    String OutputString;
+    unsigned long Timer1;
+    unsigned long Stop1;
+    // ----- Specify sensor full scale
+    byte Gscale;
+    byte Ascale;
+    byte Mscale;                           // Choose either 14-bit or 16-bit magnetometer resolution (AK8963=14-bits)
+    byte Mmode;                                  // 2 for 8 Hz, 6 for 100 Hz continuous magnetometer data read
+    float aRes, gRes, mRes;                             // scale resolutions per LSB for the sensor
+    short accelCount[3];                                // Stores the 16-bit signed accelerometer sensor output
+    short gyroCount[3];                                 // Stores the 16-bit signed gyro sensor output
+    short magCount[3];                                  // Stores the 16-bit signed magnetometer sensor output
+    float magCalibration[3], magBias[3], magScale[3];    // Factory mag calibration, mag offset , mag scale-factor
+    float gyroBias[3], accelBias[3];        // Bias corrections for gyro and accelerometer
+    short tempCount;                                    // temperature raw count output
+    float temperature;                                  // Stores the real internal chip temperature in degrees Celsius
+    float SelfTest[6];                                  // holds results of gyro and accelerometer self test
+    // ----- global constants for 9 DoF fusion and AHRS (Attitude and Heading Reference System)
+    float GyroMeasError;        // gyroscope measurement error in rads/s (start at 40 deg/s)
+    float GyroMeasDrift;        // gyroscope measurement drift in rad/s/s (start at 0.0 deg/s/s)
+    unsigned long delt_t;                           // used to control display output rate
+    unsigned long count, sumCount;              // used to control display output rate
+    float pitch, roll, yaw;
+    float deltat, sum;                    // integration interval for both filter schemes
+    unsigned long lastUpdate, firstUpdate;      // used to calculate integration interval
+    unsigned long Now;                              // used to calculate integration interval
+    float ax, ay, az, gx, gy, gz, mx, my, mz;           // variables to hold latest sensor data values
+    float q[4];              // vector to hold quaternion
+    float eInt[3];                 // vector to hold integral error for Mahony method
     void getMres();
     void getGres();
     void getAres();
@@ -221,10 +315,10 @@ class Compass {
     void calc_quaternion();
     void compass_cal();
     int angle_return();
-    void initialize();
   public:
-      Compass();
-      void update();
+    Compass();
+    void update();
+    void initialize();
 };
 
 

@@ -1,17 +1,81 @@
 // Import statements
 #include "Compass.h"
 
-Compass::Compass(TFT_eSPI* _tft){
+Compass::Compass(TFT_eSPI* _tft, int center_y = 80){
   tft = _tft;
+  center.x = center_x;
+  center.y = center_y; // only y center should change We don't need to fit that much on the screen
+  color.r = 0;
+  color.g = 0;
+  color.b = 255;
+  Mag_x_offset = -30.0,Mag_y_offset = 365.0,Mag_z_offset = -255.17,Mag_x_scale = 1.05,Mag_y_scale = 1.10,Mag_z_scale = 0.9; // from callibration! Editable
+  Declination = -14.23;     // substitute your magnetic declination
+  // ----- Processing variables
+  InputChar = 'a';                   // incoming characters stored here
+  LinkEstablished = false;     // receive flag
+  OutputString = "";         // outgoing data string to Processing
+  // ----- software timer
+  Timer1 = 500000L;   // 500mS loop ... used when sending data to to Processing
+  Stop1=0;              // Timer1 stops when micros() exceeds this value
+  Gscale = GFS_250DPS;
+  Ascale = AFS_2G;
+  Mscale = MFS_14BITS;                           // Choose either 14-bit or 16-bit magnetometer resolution (AK8963=14-bits)
+  Mmode = 0x02;                                  // 2 for 8 Hz, 6 for 100 Hz continuous magnetometer data read
+  magCalibration[3] = {0, 0, 0},
+                              magBias[3] = {0, 0, 0},
+                                          magScale[3] = {0, 0, 0};    // Factory mag calibration, mag offset , mag scale-factor
+  gyroBias[3] = {0, 0, 0}, accelBias[3] = {0, 0, 0};        // Bias corrections for gyro and accelerometer
+  // ----- global constants for 9 DoF fusion and AHRS (Attitude and Heading Reference System)
+  GyroMeasError = PI * (40.0f / 180.0f);        // gyroscope measurement error in rads/s (start at 40 deg/s)
+  GyroMeasDrift = PI * (0.0f  / 180.0f);        // gyroscope measurement drift in rad/s/s (start at 0.0 deg/s/s)
+  delt_t = 0;                           // used to control display output rate
+  count = 0, sumCount = 0;              // used to control display output rate
+  // pitch, roll, yaw;
+  deltat = 0.0f, sum = 0.0f;                    // integration interval for both filter schemes
+  lastUpdate = 0, firstUpdate = 0;      // used to calculate integration interval
+  Now = 0;                              // used to calculate integration interval
+  q[4] = {1.0f, 0.0f, 0.0f, 0.0f};              // vector to hold quaternion
+  eInt[3] = {0.0f, 0.0f, 0.0f};                 // vector to hold integral error for Mahony method
+  length = 70;
+  width = 12;
+  int left_limit = 0; //left side of screen limit
+  int right_limit = 127; //right side of screen limit
+  int top_limit = 0; //top of screen limit
+  int bottom_limit = 159; //bottom of screen limit
 }
 
 void Compass::update(int distance, float dir_next_node){
   // after figuring out angles, calls the inner update, which takes as arguments float device_angle, int distance, float dir_next_node
-
+  refresh_data();                              // This must be done each time through the loop
+  calc_quaternion();                           // This must be done each time through the loop
+  device_angle = -angle_return(); // function that gets yaw = heading
+  color.r = distance;
+  color.b = 255-distance;
+  // angle -= pi/2.0; // to make it point North // THIS WILL ACCEPT AN ANGLE OFFSET FROM EAST
+  // float angle_rad = degree_to_rad*angle; // angle already in radians!
+  angle-=dir_next_node;
+  float hl = length/2.0;
+  float hw = width/2.0;
+  float s = sin(device_angle);
+  float c = cos(device_angle);
+  p1.x = center.x+c*hl-s*hw;
+  p1.y = center.y+s*hl+c*hw;
+  p2.x = center.x-c*hl-s*hw;
+  p2.y = center.y-s*hl+c*hw;
+  p3.x = center.x-c*hl+s*hw;
+  p3.y = center.y-s*hl-c*hw;
+  p4.x = center.x+c*hl+s*hw;
+  p4.y = center.y+s*hl-c*hw;
+  p5.x = center.x+c*hl-s*width;
+  p5.y = center.y+s*hl+c*width;
+  p6.x = center.x+c*(hl+width*root3);
+  p6.y = center.y+s*(hl+width*root3);
+  p7.x = center.x+c*hl+s*width;
+  p7.y = center.y+s*hl-c*width;
+  tft->fillTriangle(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y, ST7735_GREEN);
+  tft->fillTriangle(p1.x, p1.y, p4.x, p4.y, p3.x, p3.y, ST7735_GREEN);
+  tft->fillTriangle(p5.x, p5.y, p6.x, p6.y, p7.x, p7.y, ST7735_GREEN);
 }
-
-
-
 
 
 // we should have a callibrate function. It will tell the user to tumble for thirty seconds and then it will automatically update the offsets. but this will be for next week.
@@ -91,132 +155,11 @@ void Compass::update(int distance, float dir_next_node){
 */
 
 
-// ----- user offsets and scale-factors
-/*
-  Each of the following values must be overwritten with the offsets and scale - factors for
-  YOUR location otherwise you will have to "tumble" your compass every time you switch it on.
-  here are two methods for obtaining this data :
-
-  Method 2 :
-  ----------
-  Set "#define TASK 2". Upload this change to your Arduino.
-  Run Processing "compass_cal.pde" and follow the on - screen instructions.
-  Replace (copy - & - paste) the values below with the offsets and scale - factors that appear on your computer screen.
-  Close Processing "compass_cal.pde"
-  Once you have done this select one of  TASKs 3, 4, or 5 and upload these changes to your Arduino
-  This method is more accurate, and more consistent, than method 1
-*/
-
-float Mag_x_offset = -30.0,Mag_y_offset = 365.0,Mag_z_offset = -255.17,Mag_x_scale = 1.05,Mag_y_scale = 1.10,Mag_z_scale = 0.9;
-
-
-
-// ----- Magnetic declination
-/*
-  The magnetic declination for Lower Hutt, New Zealand is +22.5833 degrees
-  Obtain your magnetic declination from http://www.magnetic-declination.com/
-  By convention, declination is positive when magnetic north
-  is east of true north, and negative when it is to the west.
-  Substitute your magnetic declination for the "Declination" shown below.
-*/
-              
-float Declination = -14.23;     // substitute your magnetic declination
-
-// ----- Processing variables
-char InputChar;                   // incoming characters stored here
-bool LinkEstablished = false;     // receive flag
-String OutputString = "";         // outgoing data string to Processing
-
-// ----- software timer
-unsigned long Timer1 = 500000L;   // 500mS loop ... used when sending data to to Processing
-unsigned long Stop1;              // Timer1 stops when micros() exceeds this value
-
-
-
-
-
-// ----- Set initial input parameters
-enum Ascale {
-  AFS_2G = 0,
-  AFS_4G,
-  AFS_8G,
-  AFS_16G
-};
-
-enum Gscale {
-  GFS_250DPS = 0,
-  GFS_500DPS,
-  GFS_1000DPS,
-  GFS_2000DPS
-};
-
-enum Mscale {
-  MFS_14BITS = 0,               // 0.6 mG per LSB;
-  MFS_16BITS                    // 0.15 mG per LSB
-};
-
-enum M_MODE {
-  M_8HZ = 0x02,                 // 8 Hz ODR (output data rate) update
-  M_100HZ = 0x06                // 100 Hz continuous magnetometer
-};
-
-// ----- Specify sensor full scale
-byte Gscale = GFS_250DPS;
-byte Ascale = AFS_2G;
-byte Mscale = MFS_14BITS;                           // Choose either 14-bit or 16-bit magnetometer resolution (AK8963=14-bits)
-byte Mmode = 0x02;                                  // 2 for 8 Hz, 6 for 100 Hz continuous magnetometer data read
-float aRes, gRes, mRes;                             // scale resolutions per LSB for the sensors
-
-short accelCount[3];                                // Stores the 16-bit signed accelerometer sensor output
-short gyroCount[3];                                 // Stores the 16-bit signed gyro sensor output
-short magCount[3];                                  // Stores the 16-bit signed magnetometer sensor output
-float magCalibration[3] = {0, 0, 0},
-                          magBias[3] = {0, 0, 0},
-                                       magScale[3] = {0, 0, 0};    // Factory mag calibration, mag offset , mag scale-factor
-float gyroBias[3] = {0, 0, 0},
-                    accelBias[3] = {0, 0, 0};        // Bias corrections for gyro and accelerometer
-short tempCount;                                    // temperature raw count output
-float temperature;                                  // Stores the real internal chip temperature in degrees Celsius
-float SelfTest[6];                                  // holds results of gyro and accelerometer self test
-
-/*
-  There is a tradeoff in the beta parameter between accuracy and response speed.
-  In the original Madgwick study, beta of 0.041 (corresponding to GyroMeasError of 2.7 degrees/s) was found to give optimal accuracy.
-  However, with this value, the LSM9SD0 response time is about 10 seconds to a stable initial quaternion.
-  Subsequent changes also require a longish lag time to a stable output, not fast enough for a quadcopter or robot car!
-  By increasing beta (GyroMeasError) by about a factor of fifteen, the response time constant is reduced to ~2 sec
-  I haven't noticed any reduction in solution accuracy. This is essentially the I coefficient in a PID control sense;
-  the bigger the feedback coefficient, the faster the solution converges, usually at the expense of accuracy.
-  In any case, this is the free parameter in the Madgwick filtering and fusion scheme.
-*/
-
-// ----- global constants for 9 DoF fusion and AHRS (Attitude and Heading Reference System)
-float GyroMeasError = PI * (40.0f / 180.0f);        // gyroscope measurement error in rads/s (start at 40 deg/s)
-float GyroMeasDrift = PI * (0.0f  / 180.0f);        // gyroscope measurement drift in rad/s/s (start at 0.0 deg/s/s)
-
-
-
-
-unsigned long delt_t = 0;                           // used to control display output rate
-unsigned long count = 0, sumCount = 0;              // used to control display output rate
-float pitch, roll, yaw;
-float deltat = 0.0f, sum = 0.0f;                    // integration interval for both filter schemes
-unsigned long lastUpdate = 0, firstUpdate = 0;      // used to calculate integration interval
-unsigned long Now = 0;                              // used to calculate integration interval
-
-float ax, ay, az, gx, gy, gz, mx, my, mz;           // variables to hold latest sensor data values
-float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};              // vector to hold quaternion
-float eInt[3] = {0.0f, 0.0f, 0.0f};                 // vector to hold integral error for Mahony method
-
-
-
-
-
 // -------------------
 // getMres()
 // -------------------
 /* Get magnetometer resolution */
-void getMres() {
+void Compass::getMres() {
   switch (Mscale)
   {
     // Possible magnetometer scales (and their register bit settings) are:
@@ -234,7 +177,7 @@ void getMres() {
 // getGres()
 // -------------------
 /* Get gyro resolution */
-void getGres() {
+void Compass::getGres() {
   switch (Gscale)
   {
     // Possible gyro scales (and their register bit settings) are:
@@ -259,7 +202,7 @@ void getGres() {
 // getAres()
 // -------------------
 /* Get accelerometer resolution */
-void getAres() {
+void Compass::getAres() {
   switch (Ascale)
   {
     // Possible accelerometer scales (and their register bit settings) are:
@@ -284,7 +227,7 @@ void getAres() {
 // readAccelData()
 // -------------------
 /* Read accelerometer registers */
-void readAccelData(short * destination)
+void Compass::readAccelData(short * destination)
 {
   byte rawData[6];  // x/y/z accel register data stored here
   readBytes(MPU9250_ADDRESS, ACCEL_XOUT_H, 6, &rawData[0]);  // Read the six raw data registers into data array
@@ -297,7 +240,7 @@ void readAccelData(short * destination)
 // readGyroData()
 // -------------------
 /* Read gyro registers */
-void readGyroData(short * destination)
+void Compass::readGyroData(short * destination)
 {
   byte rawData[6];  // x/y/z gyro register data stored here
   readBytes(MPU9250_ADDRESS, GYRO_XOUT_H, 6, &rawData[0]);  // Read the six raw data registers sequentially into data array
@@ -310,7 +253,7 @@ void readGyroData(short * destination)
 // readMagData()
 // -------------------
 /* Read magnetometer registers */
-void readMagData(short * destination)
+void Compass::readMagData(short * destination)
 {
   byte rawData[7];  // x/y/z gyro register data, ST2 register stored here, must read ST2 at end of data acquisition
   if (readByte(AK8963_ADDRESS, AK8963_ST1) & 0x01) { // wait for magnetometer data ready bit to be set
@@ -328,7 +271,7 @@ void readMagData(short * destination)
 // readTempData()
 // -------------------
 /* Read temperature */
-short readTempData()
+short Compass::readTempData()
 {
   byte rawData[2];  // x/y/z gyro register data stored here
   readBytes(MPU9250_ADDRESS, TEMP_OUT_H, 2, &rawData[0]);  // Read the two raw data registers sequentially into data array
@@ -339,7 +282,7 @@ short readTempData()
 // initAK8963()
 // -------------------
 /* Initialize the AK8963 magnetometer */
-void initAK8963(float * destination)
+void Compass::initAK8963(float * destination)
 {
   // First extract the factory calibration for each magnetometer axis
   byte rawData[3];  // x/y/z gyro calibration data stored here
@@ -364,7 +307,7 @@ void initAK8963(float * destination)
 // initMPU9250()
 // -------------------
 /* Initialize the MPU9250|MPU6050 chipset */
-void initMPU9250()
+void Compass::initMPU9250()
 {
   // -----wake up device
   writeByte(MPU9250_ADDRESS, PWR_MGMT_1, 0x00); // Clear sleep mode bit (6), enable all sensors
@@ -429,7 +372,7 @@ void initMPU9250()
   Function which accumulates gyro and accelerometer data after device initialization. It calculates the average
   of the at-rest readings and then loads the resulting offsets into accelerometer and gyro bias registers.
 */
-void calibrateMPU9250(float * dest1, float * dest2)
+void Compass::calibrateMPU9250(float * dest1, float * dest2)
 {
   byte data[12]; // data array to hold accelerometer and gyro x, y, z, data
   unsigned short ii, packet_count, fifo_count;
@@ -597,7 +540,7 @@ void calibrateMPU9250(float * dest1, float * dest2)
   Function which accumulates magnetometer data after device initialization.
   It calculates the bias and scale in the x, y, and z axes.
 */
-void magCalMPU9250(float * bias_dest, float * scale_dest)
+void Compass::magCalMPU9250(float * bias_dest, float * scale_dest)
 {
   unsigned short ii = 0, sample_count = 0;
   short mag_max[3]  = { -32768, -32768, -32768},
@@ -682,7 +625,7 @@ void magCalMPU9250(float * bias_dest, float * scale_dest)
 // MPU9250SelfTest()
 // ------------------
 /* Accelerometer and gyroscope self test; check calibration wrt factory settings */
-void MPU9250SelfTest(float * destination) // Should return percent deviation from factory trim values, +/- 14 or less deviation is a pass
+void Compass::MPU9250SelfTest(float * destination) // Should return percent deviation from factory trim values, +/- 14 or less deviation is a pass
 {
   byte rawData[6] = {0, 0, 0, 0, 0, 0};
   byte selfTest[6];
@@ -769,7 +712,7 @@ void MPU9250SelfTest(float * destination) // Should return percent deviation fro
 // --------------
 // writeByte()
 // --------------
-void writeByte(byte address, byte subAddress, byte data)
+void Compass::writeByte(byte address, byte subAddress, byte data)
 {
   Wire.beginTransmission(address);  // Initialize the Tx buffer
   Wire.write(subAddress);           // Put slave register address in Tx buffer
@@ -777,7 +720,7 @@ void writeByte(byte address, byte subAddress, byte data)
   Wire.endTransmission();           // Send the Tx buffer
 }
 
-byte readByte(byte address, byte subAddress)
+byte Compass::readByte(byte address, byte subAddress)
 {
   byte data; // `data` will store the register data
   Wire.beginTransmission(address);         // Initialize the Tx buffer
@@ -791,7 +734,7 @@ byte readByte(byte address, byte subAddress)
 // --------------
 // readBytes()
 // --------------
-void readBytes(byte address, byte subAddress, byte count, byte * dest)
+void Compass::readBytes(byte address, byte subAddress, byte count, byte * dest)
 {
   Wire.beginTransmission(address);   // Initialize the Tx buffer
   Wire.write(subAddress);            // Put slave register address in Tx buffer
@@ -810,7 +753,7 @@ void readBytes(byte address, byte subAddress, byte count, byte * dest)
   Similar to Madgwick scheme but uses proportional and integral filtering
   on the error between estimated reference vectors and measured ones.
 */
-void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
+void Compass::MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
 {
   float q1 = q[0], q2 = q[1], q3 = q[2], q4 = q[3];   // short name local variable for readability
   float norm;
@@ -905,7 +848,7 @@ void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, fl
 // refresh_data()
 // ------------------------
 /* Get current MPU-9250 register values */
-void refresh_data()
+void Compass::refresh_data()
 {
   // ----- If intPin goes high, all data registers have new data
   if (readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
@@ -995,7 +938,7 @@ void calc_quaternion()
 // compass_cal()
 // ------------------------
 /* Obtain magnetometer offsets and scale-factors using Processing "compass_cal.pde" */
-void compass_cal()
+void Compass::compass_cal()
 {
   // ----- Locals
   float
@@ -1042,7 +985,7 @@ void compass_cal()
 // angle_return()
 // ------------------------
 /* Gets the heading (yaw) of the device */
-int angle_return()
+int Compass::angle_return()
 {
     // ----- calculate pitch , roll, and yaw (radians)
   pitch = asin(2.0f * (q[1] * q[3] - q[0] * q[2]));
