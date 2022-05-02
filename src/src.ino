@@ -39,7 +39,7 @@ enum global_state
 global_state state = START;
 global_state previous_state = ARRIVED;
 
-ApiClient apiClient;
+ApiClient apiClient();
 Button button(BUTTON);
 Compass compass(&tft, 80);
 Navigation navigator(&apiClient, &compass, &tft);
