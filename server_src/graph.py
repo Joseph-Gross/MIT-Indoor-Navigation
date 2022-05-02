@@ -13,32 +13,32 @@ from queue import PriorityQueue
 
 
 # # use these imports if working locally
-POLYGONS_CSV_FILE_PATH = "data/polygons.csv"
-
-NODES_0_CSV_FILE_PATH = "data/nodes_0.csv"
-NODES_1_CSV_FILE_PATH = "data/nodes_1.csv"
-NODES_STAIRS_CSV_FILE_PATH = "data/nodes_stairs.csv"
-NODES_ELEVATORS_CSV_FILE_PATH = "data/nodes_elevators.csv"
-
-EDGES_0_CSV_FILE_PATH = "data/edges_0.csv"
-EDGES_1_CSV_FILE_PATH = "data/edges_1.csv"
-
-GRAPH_JSON_FILE_PATH = "data/graph.json"
-APSP_JSON_FILE_PATH = "data/apsp.json"
+# POLYGONS_CSV_FILE_PATH = "data/polygons.csv"
+#
+# NODES_0_CSV_FILE_PATH = "data/nodes_0.csv"
+# NODES_1_CSV_FILE_PATH = "data/nodes_1.csv"
+# NODES_STAIRS_CSV_FILE_PATH = "data/nodes_stairs.csv"
+# NODES_ELEVATORS_CSV_FILE_PATH = "data/nodes_elevators.csv"
+#
+# EDGES_0_CSV_FILE_PATH = "data/edges_0.csv"
+# EDGES_1_CSV_FILE_PATH = "data/edges_1.csv"
+#
+# GRAPH_JSON_FILE_PATH = "data/graph.json"
+# APSP_JSON_FILE_PATH = "data/apsp.json"
 
 # these imports are used server side
-# POLYGONS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/polygons.csv"
-#
-# NODES_0_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_0.csv"
-# NODES_1_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_1.csv"
-# NODES_STAIRS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_stairs.csv"
-# NODES_ELEVATORS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_elevators.csv"
-#
-# EDGES_0_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/edges_0.csv"
-# EDGES_1_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/edges_1.csv"
-#
-# GRAPH_JSON_FILE_PATH = "/var/jail/home/team8/server_src/data/graph.json"
-# APSP_JSON_FILE_PATH = "/var/jail/home/team8/server_src/data/apsp.json"
+POLYGONS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/polygons.csv"
+
+NODES_0_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_0.csv"
+NODES_1_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_1.csv"
+NODES_STAIRS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_stairs.csv"
+NODES_ELEVATORS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_elevators.csv"
+
+EDGES_0_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/edges_0.csv"
+EDGES_1_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/edges_1.csv"
+
+GRAPH_JSON_FILE_PATH = "/var/jail/home/team8/server_src/data/graph.json"
+APSP_JSON_FILE_PATH = "/var/jail/home/team8/server_src/data/apsp.json"
 
 
 @unique
