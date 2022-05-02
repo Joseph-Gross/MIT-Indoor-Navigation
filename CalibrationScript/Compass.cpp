@@ -2,9 +2,11 @@
 #include "Compass.h"
 
 Compass::Compass(TFT_eSPI* _tft, int center_y){
+  Serial.println("Beginning Compass Inititalization...");
   tft = _tft;
-  center.x = center_x;
-  center.y = center_y; // only y center should change We don't need to fit that much on the screen
+  tft->println("Compass Initialization");
+  center.x = (float)center_x;
+  center.y = (float)center_y; // only y center should change We don't need to fit that much on the screen
   color.r = 0;
   color.g = 0;
   color.b = 255;
@@ -59,6 +61,7 @@ Compass::Compass(TFT_eSPI* _tft, int center_y){
   int right_limit = 127; //right side of screen limit
   int top_limit = 0; //top of screen limit
   int bottom_limit = 159; //bottom of screen limit
+  Serial.println("Compass Initialization Complete");
 }
 
 void Compass::update(int distance, float dir_next_node){
@@ -1133,4 +1136,3 @@ void Compass::initialize(){
       while (1) ; // Loop forever if communication doesn't happen
     }
 }
-
