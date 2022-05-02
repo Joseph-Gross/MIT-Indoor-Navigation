@@ -287,6 +287,7 @@ void ApiClient::parse_response(StaticJsonDocument<1000>* doc, char* response) {
     char json[json_len + 1];
     strncpy(json, json_start, json_len);
     deserializeJson(*doc, json);
+    memset(result, '\0', strlen(response));
 }
 
 void ApiClient::fetch_location(StaticJsonDocument<1000>* doc) {
@@ -303,11 +304,8 @@ void ApiClient::fetch_location(StaticJsonDocument<1000>* doc) {
     offset += sprintf(request + offset, "Content-Length: %d\r\n\r\n", len);
     offset += sprintf(request + offset, "%s\r\n", json_body);
     do_https_request(GOOGLE_SERVER, request, response, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, false);
-    Serial.println("-----------");
-    Serial.println(response);
-    Serial.println("-----------");
 
-//    parse_response(doc, response);
+    parse_response(doc, response);
 }
 
 void ApiClient::fetch_navigation_instructions(StaticJsonDocument<1000>* doc, char* user_id, float lat, float lon,
@@ -325,7 +323,6 @@ void ApiClient::fetch_navigation_instructions(StaticJsonDocument<1000>* doc, cha
     strcat(request, "\r\n");
 
     do_http_request(TEAM_SERVER, request, response, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
-
     parse_response(doc, response);
 }
 

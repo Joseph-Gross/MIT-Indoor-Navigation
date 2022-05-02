@@ -18,8 +18,12 @@ void fetch_current_location() {
     StaticJsonDocument<1000> doc;
     apiClient.fetch_location(&doc);
 
-    float latitude = doc["lat"];
-    float longitude = doc["lon"];
+    float latitude = doc["location"]["lat"];
+    float longitude = doc["location"]["lon"];
+
+    Serial.printf("Current Location: \n");
+    Serial.printf("Latitude: %f \n", latitude);
+    Serial.printf("Longitude: %f \n", longitude);
 }
 
 void fetch_navigation_instructions() {
@@ -64,7 +68,7 @@ void loop() {
     if (millis() - timer > LOOP_THRESHOLD) {
         Serial.println("-------------------");
         Serial.println("Fetching information");
-//        fetch_current_location();
+        fetch_current_location();
         fetch_navigation_instructions();
         timer = millis();
     }

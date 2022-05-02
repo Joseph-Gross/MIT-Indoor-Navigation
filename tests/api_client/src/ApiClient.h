@@ -43,15 +43,15 @@ class ApiClient {
     static int len;
 
     uint8_t char_append(char *buff, char c, uint16_t buff_size);
-    void parse_response(StaticJsonDocument<500>* doc, char* response);
+    void parse_response(StaticJsonDocument<1000>* doc, char* response);
 public:
     ApiClient();
     void initialize_wifi_connection();
     void do_http_request(char *host, char *request, char *response, uint16_t response_size, uint16_t response_timeout, uint8_t serial);
     void do_https_request(char *host, char *request, char *response, uint16_t response_size, uint16_t response_timeout, uint8_t serial);
     int wifi_object_builder(char *object_string, uint32_t os_len, uint8_t channel, int signal_strength, uint8_t *mac_address);
-    void fetch_location(StaticJsonDocument<500>* doc);
-    void fetch_navigation_instructions(StaticJsonDocument<500>* doc, char* user_id, float lat, float lon,
+    void fetch_location(StaticJsonDocument<1000>* doc);
+    void fetch_navigation_instructions(StaticJsonDocument<1000>* doc, char* user_id, float lat, float lon,
                                        uint8_t current_floor, char* destination, uint8_t destination_floor);
 };
 
