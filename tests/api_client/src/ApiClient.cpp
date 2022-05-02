@@ -43,8 +43,8 @@ char ApiClient::password[] = "";
 
 uint8_t ApiClient::scanning = 1 ;//set to 1 if you'd like to scan for wifi networks (see below):
 uint8_t ApiClient::channel = 1;                                 // network channel on 2.4 GHz
-// D4:20:B0:E3:64:E4
-byte ApiClient::bssid[] = {0xD4, 0x20, 0xB0, 0xE3, 0x64, 0xE4}; // 6 byte MAC address of AP you're targeting.
+// 5C:5B:35:F6:31:34
+byte ApiClient::bssid[] = {0x5C, 0x5B, 0x35, 0xF6, 0x3D, 0xC4}; // 6 byte MAC address of AP you're targeting.
 
 char ApiClient::request[IN_BUFFER_SIZE];
 char ApiClient::response[OUT_BUFFER_SIZE]; // char array buffer to hold HTTP request
@@ -72,7 +72,7 @@ void ApiClient::initialize_wifi_connection() {
                     cc++;
                 }
                 Serial.println("");
-
+            }
 
                 max_aps = max(min(MAX_APS, n), 1);
                 for (int i = 0; i < max_aps; ++i)
@@ -84,7 +84,6 @@ void ApiClient::initialize_wifi_connection() {
                         offset += sprintf(json_body + offset, ","); // add comma between entries except trailing.
                     }
                 }
-            }
         }
     }
     delay(100); //wait a bit (100 ms)
