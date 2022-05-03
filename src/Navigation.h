@@ -56,6 +56,7 @@ public:
     Navigation(ApiClient* client, Compass* _compass, TFT_eSPI* _tft);
     void fetch_current_location();
     void fetch_navigation_instructions();
+    void display_selection();
     void begin_navigation(uint8_t _current_floor, char* _destination, uint8_t _destination_floor);
     void end_navigation();
     int navigate();
