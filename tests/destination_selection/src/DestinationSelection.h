@@ -10,7 +10,7 @@
 
 const uint8_t MAX_BUILDING_NAME_LENGTH = 25;
 const int NUM_BUILDINGS = 10;
-const int NUM_FLOORS = 10;
+const int NUM_FLOORS = 2;
 
 enum destination_selection_state {IDLE, BUILDING_SELECTION, FLOOR_SELECTION, CONFIRM_DESTINATION, DESTINATION_SELECTED};
 
@@ -40,8 +40,8 @@ public:
     void initialize_imu();
     void begin_selection();
     void end_selection();
-    char* get_destination_building();
-    char* get_destination_floor();
+    void get_destination_building(char* building);
+    void get_destination_floor(char* floor);
     int update(int button_flag);
 };
 

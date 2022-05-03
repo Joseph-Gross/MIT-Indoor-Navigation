@@ -48,26 +48,20 @@ void DestinationSelection::end_selection() {
 }
 
 void DestinationSelection::display_selection(){
-    Serial.println("Updating TFT");
     tft->fillScreen(TFT_BLACK);
     tft->setCursor(0, 0, 1);
     tft->println("Destination Selection \n\n");
 
     tft->printf("Building: %s\n\n", destination_building_index >= 0 ? BUILDINGS[destination_building_index] : "");
-
-    tft->printf("Floor: %s", destination_floor_index >= 0 ? BUILDINGS[destination_floor_index] : "");
+    tft->printf("Floor: %s\n\n\n\n", destination_floor_index >= 0 ? FLOORS[destination_floor_index] : "");
 }
 
-char* DestinationSelection::get_destination_building() {
-    char _building[5];
-    sprintf(_building, "%s", BUILDINGS[destination_building_index]);
-    return _building;
+void DestinationSelection::get_destination_building(char* building) {
+    strcpy(building, BUILDINGS[destination_building_index]);
 }
 
-char* DestinationSelection::get_destination_floor() {
-    char _floor[5];
-    sprintf(_floor, "%s", FLOORS[destination_floor_index]);
-    return _floor;
+void DestinationSelection::get_destination_floor(char* floor) {
+    strcpy(floor, FLOORS[destination_floor_index]);
 }
 
 int DestinationSelection::update(int button_flag) {
@@ -100,7 +94,6 @@ int DestinationSelection::update(int button_flag) {
 
             if (button_flag == 1) {
                 state = FLOOR_SELECTION;
-                Serial.println("BUILDING_SELECTION -> FLOOR_SELECTION");
             }
             break;
 
@@ -121,13 +114,13 @@ int DestinationSelection::update(int button_flag) {
 
             if (button_flag == 1) {
                 state = CONFIRM_DESTINATION;
-                tft->println("Short press to confirm, long press to cancel");
-                Serial.println("FLOOR_SELECTION -> CONFIRM_DESTINATION");
+                tft->println("Confirm Selection:\n");
+                tft->println("Short Press: confirm");
+                tft->println("Long Press: cancel\n\n");
             } else if (button_flag == 2) {
                 clear_selection();
                 display_selection();
                 state = BUILDING_SELECTION;
-                Serial.println("FLOOR_SELECTION -> BUILDING_SELECTION");
             }
             break;
 
@@ -135,12 +128,11 @@ int DestinationSelection::update(int button_flag) {
             if (button_flag == 1) {
                 flag = 1;
                 state = DESTINATION_SELECTED;
-                Serial.println("CONFIRM_DESTINATION -> DESTINATION_SELECTED");
+                tft->println("Confirmed!!");
             } else if (button_flag == 2) {
                 clear_selection();
                 display_selection();
                 state = BUILDING_SELECTION;
-                Serial.println("CONFIRM_DESTINATION -> BUILDING_SELECTED");
             }
             break;
 
@@ -148,7 +140,6 @@ int DestinationSelection::update(int button_flag) {
             if (!selecting) {
                 clear_selection();
                 state = IDLE;
-                Serial.println("DESTINATION_SELECTED -> IDLE");
             }
     }
 
