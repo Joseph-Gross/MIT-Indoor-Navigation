@@ -15,6 +15,8 @@ void setup() {
     Serial.begin(115200); // Set up serial
     while(!Serial);
 
+    Serial.println("Setting up TFT");
+
     tft.init();                             // init screen
     tft.setRotation(2);                     // adjust rotation
     tft.setTextSize(1);                     // default font size, change if you want
@@ -31,6 +33,10 @@ void setup() {
 void loop() {
     int button_flag = button.update();
     int destination_flag = destination_selection.update(button_flag);
+
+    if (button_flag == 1) {
+        Serial.printf("%d \n", button_flag);
+    }
 
     if (destination_flag == 1) {
         char* building = destination_selection.get_destination_building();

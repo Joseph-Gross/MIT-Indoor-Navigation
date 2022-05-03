@@ -10,7 +10,7 @@
 
 const uint8_t MAX_BUILDING_NAME_LENGTH = 25;
 const int NUM_BUILDINGS = 10;
-const int NUM_FLOORS = 2;
+const int NUM_FLOORS = 10;
 
 enum destination_selection_state {IDLE, BUILDING_SELECTION, FLOOR_SELECTION, CONFIRM_DESTINATION, DESTINATION_SELECTED};
 
