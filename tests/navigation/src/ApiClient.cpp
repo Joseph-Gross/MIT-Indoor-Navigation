@@ -43,8 +43,8 @@ char ApiClient::password[] = "";
 
 uint8_t ApiClient::scanning = 1 ;//set to 1 if you'd like to scan for wifi networks (see below):
 uint8_t ApiClient::channel = 1;                                 // network channel on 2.4 GHz
-// D4:20:B0:E3:64:E4
-byte ApiClient::bssid[] = {0xD4, 0x20, 0xB0, 0xE3, 0x64, 0xE4}; // 6 byte MAC address of AP you're targeting.
+// 5C:5B:35:F6:31:34
+byte ApiClient::bssid[] = {0x5C, 0x5B, 0x35, 0xF6, 0x3D, 0xC4}; // 6 byte MAC address of AP you're targeting.
 
 char ApiClient::request[IN_BUFFER_SIZE];
 char ApiClient::response[OUT_BUFFER_SIZE]; // char array buffer to hold HTTP request
@@ -55,6 +55,7 @@ int ApiClient::offset = sprintf(json_body, "%s", GEOLOCATION_REQUEST_PREFIX);
 int ApiClient::len;
 
 void ApiClient::initialize_wifi_connection() {
+    Serial.println("Initializing Wifi Connection");
     if (scanning){
         int n = WiFi.scanNetworks();
         Serial.println("scan done");
@@ -72,7 +73,7 @@ void ApiClient::initialize_wifi_connection() {
                     cc++;
                 }
                 Serial.println("");
-
+            }
 
                 max_aps = max(min(MAX_APS, n), 1);
                 for (int i = 0; i < max_aps; ++i)
@@ -84,15 +85,14 @@ void ApiClient::initialize_wifi_connection() {
                         offset += sprintf(json_body + offset, ","); // add comma between entries except trailing.
                     }
                 }
-            }
         }
     }
     delay(100); //wait a bit (100 ms)
 
     //if using regular connection use line below:
-//    WiFi.begin(network, password);
+    WiFi.begin(network, password);
     //if using channel/mac specification for crowded bands use the following:
-    WiFi.begin(network, password, channel, bssid);
+//    WiFi.begin(network, password, channel, bssid);
     uint8_t count = 0; //count used for Wifi check times
     Serial.print("Attempting to connect to ");
     Serial.println(network);
@@ -149,6 +149,7 @@ uint8_t ApiClient::char_append(char *buff, char c, uint16_t buff_size)
  */
 void ApiClient::do_http_request(char *host, char *request, char *response, uint16_t response_size, uint16_t response_timeout, uint8_t serial)
 {
+    Serial.println("HTTP Request");
     if (client2.connect(host, 80))
     { // try to connect to host on port 80
         if (serial)
@@ -205,15 +206,15 @@ void ApiClient::do_http_request(char *host, char *request, char *response, uint1
 */
 void ApiClient::do_https_request(char *host, char *request, char *response, uint16_t response_size, uint16_t response_timeout, uint8_t serial)
 {
+    Serial.printf("Making HTTPS Request to %s \n", host);
     client.setHandshakeTimeout(30);
     client.setCACert(CA_CERT); // set cert for https
     if (client.connect(host, 443, 4000))
     { // try to connect to host on port 443
-        if (serial)
-            Serial.print(request); // Can do one-line if statements in C without curly braces
+        if (serial) Serial.print(request); // Can do one-line if statements in C without curly braces
         client.print(request);
         response[0] = '\0';
-        // memset(response, 0, response_size); //Null out (0 is the value of the null terminator '\0') entire buffer
+        memset(response, 0, response_size); //Null out (0 is the value of the null terminator '\0') entire buffer
         uint32_t count = millis();
         while (client.connected())
         { // while we remain connected read out data coming back
@@ -234,11 +235,11 @@ void ApiClient::do_https_request(char *host, char *request, char *response, uint
         { // read out remaining text (body of response)
             char_append(response, client.read(), response_size);
         }
-        if (serial)
-            Serial.println(response);
+//        if (serial)
+//            Serial.println(response);
         client.stop();
-        if (serial)
-            Serial.println("-----------");
+//        if (serial)
+//            Serial.println("-----------");
     }
     else
     {
@@ -276,43 +277,42 @@ int ApiClient::wifi_object_builder(char *object_string, uint32_t os_len, uint8_t
     }
 }
 
-void ApiClient::parse_response(StaticJsonDocument<500> doc, char* response) {
+StaticJsonDocument<500> ApiClient::fetch_location() {
+    Serial.println("Fetching Location");
+    sprintf(json_body + offset, "%s", GEOLOCATION_REQUEST_SUFFIX);
+    int len = strlen(json_body);
+    request[0] = '\0'; // set 0th byte to null
+    offset = 0;        // reset offset variable for sprintf-ing
+    offset += sprintf(request + offset, "POST https://www.googleapis.com/geolocation/v1/geolocate?key=%s  HTTP/1.1\r\n", GEOLOCATION_API_KEY);
+    offset += sprintf(request + offset, "Host: googleapis.com\r\n");
+    offset += sprintf(request + offset, "Content-Type: application/json\r\n");
+    offset += sprintf(request + offset, "cache-control: no-cache\r\n");
+    offset += sprintf(request + offset, "Content-Length: %d\r\n\r\n", len);
+    offset += sprintf(request + offset, "%s\r\n", json_body);
+    do_https_request(GOOGLE_SERVER, request, response, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, false);
 
+    // Parsing response
     char* json_start = strchr(response, '{');
-    char* json_end = strchr(response, '}');
-    int json_len = json_end - json_start;
+    char* json_end = strrchr(response, '}');
+    int json_len = json_end - json_start ;
 
     char json[json_len + 1];
     strncpy(json, json_start, json_len);
-    deserializeJson(doc, json);
+
+    StaticJsonDocument<500> doc;
+    DeserializationError error = deserializeJson(doc, json);
+
+    if (error) {
+        Serial.print("deserializeJson() failed: ");
+        Serial.println(error.c_str());
+    }
+    return doc;
 }
 
-void ApiClient::fetch_location(StaticJsonDocument<500> doc) {
-        sprintf(json_body + offset, "%s", GEOLOCATION_REQUEST_SUFFIX);
-        Serial.println(json_body);
-        int len = strlen(json_body);
-        // Make a HTTP request:
-        Serial.println("SENDING REQUEST");
-        request[0] = '\0'; // set 0th byte to null
-        offset = 0;        // reset offset variable for sprintf-ing
-        offset += sprintf(request + offset, "POST https://www.googleapis.com/geolocation/v1/geolocate?key=%s  HTTP/1.1\r\n", GEOLOCATION_API_KEY);
-        offset += sprintf(request + offset, "Host: googleapis.com\r\n");
-        offset += sprintf(request + offset, "Content-Type: application/json\r\n");
-        offset += sprintf(request + offset, "cache-control: no-cache\r\n");
-        offset += sprintf(request + offset, "Content-Length: %d\r\n\r\n", len);
-        offset += sprintf(request + offset, "%s\r\n", json_body);
-        do_https_request(GOOGLE_SERVER, request, response, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, false);
-        Serial.println("-----------");
-        Serial.println(response);
-        Serial.println("-----------");
-    // }
-
-    parse_response(doc, response);
-}
-
-void ApiClient::fetch_navigation_instructions(StaticJsonDocument<500> doc, char* user_id, float lat, float lon,
-                                              uint8_t current_floor, char* destination, uint8_t destination_floor) {
-
+StaticJsonDocument<500> ApiClient::fetch_navigation_instructions(char* user_id, float lat, float lon,
+                                                                 uint8_t current_floor, char* destination,
+                                                                 uint8_t destination_floor) {
+    Serial.println("Fetching Navigation Instructions");
     sprintf(request, "GET https://608dev-2.net/sandbox/sc/team8/server_src/request_handler.py?"
                      "user_id=%s&"
                      "lat=%f&"
@@ -323,10 +323,15 @@ void ApiClient::fetch_navigation_instructions(StaticJsonDocument<500> doc, char*
                      "HTTP/1.1\r\n", user_id, lat, lon, current_floor, destination, destination_floor);
     strcat(request, "Host: 608dev-2.net\r\n");
     strcat(request, "\r\n");
-
     do_http_request(TEAM_SERVER, request, response, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
-    Serial.println("nav response: ");
-    Serial.print(response);
-    parse_response(doc, response);
+
+    // Parsing response
+    StaticJsonDocument<500> doc;
+    DeserializationError error = deserializeJson(doc, response);
+    if (error) {
+        Serial.print("deserializeJson() failed: ");
+        Serial.println(error.c_str());
+    }
+    return doc;
 }
 

@@ -698,10 +698,10 @@ def get_current_building(polygons: Dict[str, Polygon], point: Location) -> str:
 
 def calculate_eta(distance: float, avg_velocity: float = 1.34112):
     """
-    Distance in meters, avg_velocity in m/s
+    Distance in meters, avg_velocity in m/s, eta in seconds
     """
 
-    return distance / avg_velocity
+    return round(distance / avg_velocity, 2)
 
 
 if __name__ == "__main__":

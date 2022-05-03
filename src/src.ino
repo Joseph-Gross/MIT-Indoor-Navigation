@@ -158,6 +158,7 @@ void setup() {
   tft.setTextSize(1);                     // default font size, change if you want
   tft.fillScreen(TFT_BLACK);              // fill background
   tft.setTextColor(TFT_GREEN, TFT_BLACK); // set color of font to hot pink foreground, black background
+
   apiClient.initialize_wifi_connection();
   compass.initialize();
   display_start_message();
