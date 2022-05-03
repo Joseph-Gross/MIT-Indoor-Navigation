@@ -209,7 +209,6 @@ void ApiClient::do_https_request(char *host, char *request, char *response, uint
     Serial.printf("Making HTTPS Request to %s \n", host);
     client.setHandshakeTimeout(30);
     client.setCACert(CA_CERT); // set cert for https
-    Serial.println("Certificate Set");
     if (client.connect(host, 443, 4000))
     { // try to connect to host on port 443
         if (serial) Serial.print(request); // Can do one-line if statements in C without curly braces
@@ -236,11 +235,11 @@ void ApiClient::do_https_request(char *host, char *request, char *response, uint
         { // read out remaining text (body of response)
             char_append(response, client.read(), response_size);
         }
-        if (serial)
-            Serial.println(response);
+//        if (serial)
+//            Serial.println(response);
         client.stop();
-        if (serial)
-            Serial.println("-----------");
+//        if (serial)
+//            Serial.println("-----------");
     }
     else
     {
@@ -278,22 +277,9 @@ int ApiClient::wifi_object_builder(char *object_string, uint32_t os_len, uint8_t
     }
 }
 
-void ApiClient::parse_response(StaticJsonDocument<1000>* doc, char* response) {
-
-    char* json_start = strchr(response, '{');
-    char* json_end = strchr(response, '}');
-    int json_len = json_end - json_start;
-
-    char json[json_len + 1];
-    strncpy(json, json_start, json_len);
-    deserializeJson(*doc, json);
-    memset(result, '\0', strlen(response));
-}
-
-void ApiClient::fetch_location(StaticJsonDocument<1000>* doc) {
+StaticJsonDocument<500> ApiClient::fetch_location() {
     Serial.println("Fetching Location");
     sprintf(json_body + offset, "%s", GEOLOCATION_REQUEST_SUFFIX);
-    Serial.println(json_body);
     int len = strlen(json_body);
     request[0] = '\0'; // set 0th byte to null
     offset = 0;        // reset offset variable for sprintf-ing
@@ -305,11 +291,27 @@ void ApiClient::fetch_location(StaticJsonDocument<1000>* doc) {
     offset += sprintf(request + offset, "%s\r\n", json_body);
     do_https_request(GOOGLE_SERVER, request, response, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, false);
 
-    parse_response(doc, response);
+    // Parsing response
+    char* json_start = strchr(response, '{');
+    char* json_end = strrchr(response, '}');
+    int json_len = json_end - json_start ;
+
+    char json[json_len + 1];
+    strncpy(json, json_start, json_len);
+
+    StaticJsonDocument<500> doc;
+    DeserializationError error = deserializeJson(doc, json);
+
+    if (error) {
+        Serial.print("deserializeJson() failed: ");
+        Serial.println(error.c_str());
+    }
+    return doc;
 }
 
-void ApiClient::fetch_navigation_instructions(StaticJsonDocument<1000>* doc, char* user_id, float lat, float lon,
-                                              uint8_t current_floor, char* destination, uint8_t destination_floor) {
+StaticJsonDocument<500> ApiClient::fetch_navigation_instructions(char* user_id, float lat, float lon,
+                                                                 uint8_t current_floor, char* destination,
+                                                                 uint8_t destination_floor) {
     Serial.println("Fetching Navigation Instructions");
     sprintf(request, "GET https://608dev-2.net/sandbox/sc/team8/server_src/request_handler.py?"
                      "user_id=%s&"
@@ -321,8 +323,15 @@ void ApiClient::fetch_navigation_instructions(StaticJsonDocument<1000>* doc, cha
                      "HTTP/1.1\r\n", user_id, lat, lon, current_floor, destination, destination_floor);
     strcat(request, "Host: 608dev-2.net\r\n");
     strcat(request, "\r\n");
-
     do_http_request(TEAM_SERVER, request, response, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
-    parse_response(doc, response);
+
+    // Parsing response
+    StaticJsonDocument<500> doc;
+    DeserializationError error = deserializeJson(doc, response);
+    if (error) {
+        Serial.print("deserializeJson() failed: ");
+        Serial.println(error.c_str());
+    }
+    return doc;
 }
 

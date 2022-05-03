@@ -1,9 +1,10 @@
 import sys
-sys.path.append('/var/jail/home/team8')
+sys.path.append('/var/jail/home/team8/server_src')
 # POLYGONS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/polygons.csv"
 
-from server_src import graph as graph_utils
-# import graph as graph_utils
+# from server_src import graph as graph_utils
+import json
+import graph as graph_utils
 from dataclasses import dataclass, asdict
 
 
@@ -85,6 +86,9 @@ def request_handler(request):
                         dist_next_node=dist_next_node, dir_next_node=dir_next_node,
                         has_arrived=has_arrived, eta=eta, dest_node=dest_node.id, dest_building=dest_node.building)
 
-    return asdict(response)
+    response_dict = asdict(response)
+    response_dict["has_arrived"] = int(response.has_arrived)
+
+    return json.dumps(response_dict)
 
 # TODO: Refactor so that building input can be one or two digits (check if numeric, convert to number, then convert to two digit string)
