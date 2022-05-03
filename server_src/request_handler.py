@@ -45,6 +45,7 @@ def try_parse_get_request(request) -> RequestValues:
     lat = float(values.get("lat"))
     lon = float(values.get("lon"))
     destination = values.get("destination")
+    destination = str(int(destination))
     current_floor = int(values.get("current_floor"))
     destination_floor = int(values.get("destination_floor"))
 
