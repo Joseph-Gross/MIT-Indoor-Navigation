@@ -13,7 +13,7 @@
 
 // #define BACKGROUND TFT_BLACK // Already defined?
 #define pi 3.14159265
-#define degree_to_rad = 0.0174532925; // pi/180.0
+#define degree_to_rad 0.0174532925; // pi/180.0
 #define root3over2 0.8660254
 #define root3 1.7320508
 
@@ -299,13 +299,13 @@ class Compass {
     byte readByte(byte address, byte subAddress);
     void readBytes(byte address, byte subAddress, byte count, byte * dest);
     void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
-    void refresh_data();
-    void calc_quaternion();
     int angle_return();
   public:
     Compass(TFT_eSPI* _tft, int center_y);
     void update(int distance, float dir_next_node);
     void initialize();
+    void refresh_data();
+    void calc_quaternion();
     void calibrate();
 };
 

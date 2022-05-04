@@ -66,11 +66,13 @@ void Compass::update(int distance, float dir_next_node){
   refresh_data();                              // This must be done each time through the loop
   calc_quaternion();                           // This must be done each time through the loop
   device_angle = -angle_return(); // function that gets yaw = heading
+//  Serial.println(device_angle);
+  
   color.r = distance;
   color.b = 255-distance;
   // angle -= pi/2.0; // to make it point North // THIS WILL ACCEPT AN ANGLE OFFSET FROM EAST
-  // float angle_rad = degree_to_rad*angle; // angle already in radians!
-  device_angle-=dir_next_node;
+  float angle_rad = 0.0174532925*device_angle; // angle already in radians!
+  device_angle = angle_rad - dir_next_node;
   float hl = length/2.0;
   float hw = width/2.0;
   float s = sin(device_angle);
@@ -92,6 +94,9 @@ void Compass::update(int distance, float dir_next_node){
   tft->fillTriangle(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y, ST7735_GREEN);
   tft->fillTriangle(p1.x, p1.y, p4.x, p4.y, p3.x, p3.y, ST7735_GREEN);
   tft->fillTriangle(p5.x, p5.y, p6.x, p6.y, p7.x, p7.y, ST7735_GREEN);
+  tft->setCursor(0,0);
+  tft->print("Angle is ");
+  tft->print(-device_angle/0.0174532925);
 }
 
 
@@ -837,6 +842,7 @@ void Compass::readBytes(byte address, byte subAddress, byte count, byte * dest)
 void Compass::MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
 {
   float q1 = q[0], q2 = q[1], q3 = q[2], q4 = q[3];   // short name local variable for readability
+  Serial.printf("quaternion: \n 0 %f \n, 1 %f \n, 2 %f \n, 3 %f \n", q1, q2, q3, q4);
   float norm;
   float hx, hy, bx, bz;
   float vx, vy, vz, wx, wy, wz;
@@ -931,6 +937,7 @@ void Compass::MahonyQuaternionUpdate(float ax, float ay, float az, float gx, flo
 /* Get current MPU-9250 register values */
 void Compass::refresh_data()
 {
+  Serial.println("Compass::refresh_data()");
   // ----- If intPin goes high, all data registers have new data
   if (readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
   {
@@ -941,7 +948,7 @@ void Compass::refresh_data()
     ax = (float)accelCount[0] * aRes;                   // - accelBias[0];  // get actual g value, this depends on scale being set
     ay = (float)accelCount[1] * aRes;                   // - accelBias[1];
     az = (float)accelCount[2] * aRes;                   // - accelBias[2];
-
+//    Serial.printf("Ax: %f \n Ay: %f \n Az: %f \n", ax, ay, az);
     // ----- Gyro calculations
     readGyroData(gyroCount);                            // Read the gyro registers
     getGres();                                          // Get gyro resolution
@@ -950,6 +957,7 @@ void Compass::refresh_data()
     gx = (float)gyroCount[0] * gRes; // get actual gyro value, this depends on scale being set
     gy = (float)gyroCount[1] * gRes;
     gz = (float)gyroCount[2] * gRes;
+//    Serial.printf("gx: %f \n gy: %f \n gz: %f \n", gx, gy, gz);
 
     // ----- Magnetometer calculations
     readMagData(magCount);                              // Read the magnetometer x|y| registers
@@ -981,6 +989,7 @@ void Compass::refresh_data()
     mx = ((float)magCount[0] * mRes * magCalibration[0] - magBias[0]) * magScale[0];    // (rawMagX*ASAX*0.6 - magOffsetX)*scalefactor
     my = ((float)magCount[1] * mRes * magCalibration[1] - magBias[1]) * magScale[1];    // (rawMagY*ASAY*0.6 - magOffsetY)*scalefactor
     mz = ((float)magCount[2] * mRes * magCalibration[2] - magBias[2]) * magScale[2];    // (rawMagZ*ASAZ*0.6 - magOffsetZ)*scalefactor
+//    Serial.printf("mx: %f \n my: %f \n mz: %f \n", mx, my, mz);
   }
 }
 
@@ -1023,6 +1032,7 @@ void Compass::calc_quaternion()
 /* Gets the heading (yaw) of the device */
 int Compass::angle_return()
 {
+//  Serial.printf("quaternion: \n 0 %f \n, 1 %f \n, 2 %f \n, 3 %f \n", q[0], q[1], q[2], q[3]);
     // ----- calculate pitch , roll, and yaw (radians)
   pitch = asin(2.0f * (q[1] * q[3] - q[0] * q[2]));
   roll  = -atan2(2.0f * (q[0] * q[1] + q[2] * q[3]), q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3]);
@@ -1039,7 +1049,11 @@ int Compass::angle_return()
   if (True_North == true) heading += Declination;           // Calculate True North
   if (heading < 0) heading += 360.0;                        // Allow for under|overflow
   if (heading >= 360) heading -= 360.0;
-
+//  Serial.println(pitch);
+//  Serial.println(roll);
+//  Serial.println("previous two were pitch and roll, next two are yaw and heading, which should differ by declination");
+//  Serial.println(yaw);
+  Serial.printf("Heading: %f \n", heading);
   return heading;
 }
 

@@ -2,7 +2,7 @@
 #include <Arduino.h>
 
 TFT_eSPI tft = TFT_eSPI();
-Compass compass(&tft, 80);;
+Compass compass(&tft, 80);
 float increment = 0.0;
 uint32_t timer = 0;
 
@@ -19,17 +19,21 @@ void setup() {
 
     Serial.println("Initializing and Calibrating Compass");
     compass.initialize();
-    compass.calibrate();
+//    compass.calibrate();
     Serial.println("Initialization of Compass Complete");
 
     timer = millis();
 }
 
 void loop() {
-    if (millis()-timer > 10000){
-        Serial.println("Updating compass");
-
-        compass.update(10, 3.5);
-        timer = millis();
+  compass.refresh_data();                              // This must be done each time through the loop
+  compass.calc_quaternion();                           // This must be done each time through the loop
+    if (millis()-timer > 1000){
+      tft.fillScreen(TFT_BLACK); 
+      Serial.println("Updating compass");
+      compass.update(1, 0);
+      
+      timer = millis();
     }
+    
 }
