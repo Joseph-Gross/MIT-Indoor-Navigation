@@ -137,7 +137,51 @@ class ClosestNodeTests(unittest.TestCase):
         #print(loc_from_google.values)
         #print("Between current location and 1.1.1.b:"+str(distance.distance(loc_from_google.values,node_1.location.values)))
         self.assertEqual(self.graph.get_closest_node(loc_from_google),"1.1.1.b")
-
+class CurrentBuildingTests(unittest.TestCase):
+    def setUp(self):
+        self.polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
+        self.nodes = graph_utils.parse_nodes(NODES_1_CSV_FILE_PATH, self.polygons, 1)
+        self.edges = graph_utils.parse_edges(EDGES_1_CSV_FILE_PATH, self.nodes)
+        self.graph = graph_utils.create_graph(self.nodes, self.edges, num_floors=2)
+    def test_current_building_1(self):
+        building_1_google = graph_utils.Location(lat=42.357825577051706, lon=-71.0923321912592)
+        self.assertEqual(graph_utils.get_current_building(self.polygons,building_1_google),"1")
+    def test_current_kc(self):
+        kc_google = graph_utils.Location(lat=42.358746513561734, lon=-71.0917045428588)
+        self.assertEqual(graph_utils.get_current_building(self.polygons,kc_google),"kc")
+    def test_current_building_2(self):
+        building_2_google = graph_utils.Location(lat=42.35854448230048, lon=-71.09010016985769)
+        self.assertEqual(graph_utils.get_current_building(self.polygons,building_2_google),"2")
+    def test_current_building_3(self):
+        building_3_google = graph_utils.Location(lat=42.358804770819376, lon=-71.09238069532579)
+        self.assertEqual(graph_utils.get_current_building(self.polygons,building_3_google),"3")
+    def test_current_building_4(self):
+        building_4_google = graph_utils.Location(lat=42.35973828185238, lon=-71.09162431237463)
+        self.assertEqual(graph_utils.get_current_building(self.polygons,building_4_google),"4")
+    def test_current_building_5(self):
+        building_5_google = graph_utils.Location(lat=42.35899581457759, lon=-71.09312942336591)
+        self.assertEqual(graph_utils.get_current_building(self.polygons,building_5_google),"5")
+    def test_current_building_6(self):
+        building_6_google = graph_utils.Location(lat=42.35936328539658, lon=-71.09030221535313)
+        self.assertEqual(graph_utils.get_current_building(self.polygons,building_6_google),"6")
+    def test_current_building_6(self):
+        building_6_google = graph_utils.Location(lat=42.35936328539658, lon=-71.09030221535313)
+        self.assertEqual(graph_utils.get_current_building(self.polygons,building_6_google),"6")
+    def test_current_building_7(self):
+        building_7_google = graph_utils.Location(lat=42.359475274291235, lon=-71.09340947698884)
+        self.assertEqual(graph_utils.get_current_building(self.polygons,building_7_google),"7")
+    def test_current_building_8(self):
+        building_8_google = graph_utils.Location(lat=42.360018331810686, lon=-71.09085333182983)
+        self.assertEqual(graph_utils.get_current_building(self.polygons,building_8_google),"8")
+    def test_current_building_10(self):
+        building_10_google = graph_utils.Location(lat=42.359540642219535, lon=-71.0917642650563)
+        self.assertEqual(graph_utils.get_current_building(self.polygons,building_10_google),"10")
+    def test_current_building_11(self):
+        building_11_google = graph_utils.Location(lat=42.35959482914369, lon=-71.09274473447597)
+        self.assertEqual(graph_utils.get_current_building(self.polygons,building_11_google),"11")
+    def test_current_unmapped_building(self):
+        unmapped_point = graph_utils.Location(lat=42.3588101176443, lon=-71.08914198461318)
+        self.assertEqual(graph_utils.get_current_building(self.polygons,unmapped_point),None)
 class DijkstraTests(unittest.TestCase):
     def setUp(self):
         polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
