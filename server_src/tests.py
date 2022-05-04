@@ -6,7 +6,7 @@ import graph as graph_utils
 # from server_src.graph import POLYGONS_CSV_FILE_PATH, NODES_1_CSV_FILE_PATH, EDGES_1_CSV_FILE_PATH, GRAPH_JSON_FILE_PATH, \
 #    APSP_JSON_FILE_PATH
 from graph import POLYGONS_CSV_FILE_PATH, NODES_1_CSV_FILE_PATH, EDGES_1_CSV_FILE_PATH, GRAPH_JSON_FILE_PATH, \
-    APSP_JSON_FILE_PATH
+    APSP_JSON_FILE_PATH, calculate_direction, calculate_direction2
 from geopy.distance import geodesic as GD
 
 
@@ -281,6 +281,28 @@ class DijkstraTests(unittest.TestCase):
 
         self.assertEqual(expected_path, route.path)
         self.assertEqual(expected_dest, route.destination)
+
+
+class DirectionTests(unittest.TestCase):
+    def setUp(self):
+        polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
+        nodes = graph_utils.parse_nodes(NODES_1_CSV_FILE_PATH, polygons, 1)
+        edges = graph_utils.parse_edges(EDGES_1_CSV_FILE_PATH, nodes)
+        self.graph = graph_utils.create_graph(nodes, edges, num_floors=2)
+    def test_direction_0(self):
+        startNode = graph_utils.Location(lat=42.35818, lon=-71.09114)
+        endNode = graph_utils.Location(lat=42.35866,lon=-71.09143)
+        print(calculate_direction(endNode, startNode))
+
+        #         src = "10.1.2.b"
+        # dest_building = "1"  # Building number
+
+        # expected_path = ["10.1.2.b", "10.1.1.b", "3.1.4.b", "3.1.3.b", "3.1.2.b", "3.1.1.b", "1.1.4.b"]
+        # expected_dest = expected_path[-1]
+        # route = self.graph.find_shortest_path(src, dest_building)
+
+        # self.assertEqual(expected_path, route.path)
+        # self.assertEqual(expected_dest, route.destination)
 
 
 if __name__ == "__main__":

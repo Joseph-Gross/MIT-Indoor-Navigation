@@ -695,12 +695,23 @@ def calculate_distance(point_1: Location, point_2: Location) -> distance.meters:
     return geodesic(point_1.values, point_2.values).meters
 
 
+
 def calculate_direction(point_1: Location, point_2: Location) -> Optional[float]:
-    delta_y = point_2.lat - point_1.lat
-    delta_x = point_2.lon - point_1.lon
-
-    return math.atan(delta_y) / delta_x if delta_x != 0 else None
-
+    #const y = math.sin(λ2-λ1) * math.cos(φ2);
+    lonA = point_1.lon
+    latA = point_1.lat
+    lonB = point_2.lon
+    latB = point_2.lat
+    
+    # dLon = lon2 - lon1
+    # y = math.sin(dLon) * math.cos(lat2)
+    # x = math.cos(lat1)*math.sin(lat2) - math.sin(lat1)*math.cos(lat2)*math.cos(dLon)
+    # brng = math.degrees(math.atan2(y, x))
+    # return brng
+   
+    Δφ = math.log(math.tan( latB / 2 + math.pi / 4 ) / math.tan( latA / 2 + math.pi / 4) )
+    Δlon = abs( lonA - lonB )%180  if abs( lonA - lonB ) > 180 else abs( lonA - lonB )
+    return math.atan2( Δlon ,  Δφ ) - math.pi/2
 
 if __name__ == "__main__":
     polygons = parse_polygons(POLYGONS_CSV_FILE_PATH)
