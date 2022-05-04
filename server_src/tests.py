@@ -7,7 +7,7 @@ import graph as graph_utils
  #   APSP_JSON_FILE_PATH
 from graph import POLYGONS_CSV_FILE_PATH, NODES_1_CSV_FILE_PATH, EDGES_1_CSV_FILE_PATH, GRAPH_JSON_FILE_PATH, \
     APSP_JSON_FILE_PATH
-from geopy import distance 
+from geopy.distance import geodesic as GD
 class PolygonTests(unittest.TestCase):
     def setUp(self):
         self.polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
@@ -30,13 +30,13 @@ class PolygonTests(unittest.TestCase):
         Tests building 10's polygon is parsed as expected and converted to polygon object
         """
         expected_vertices_building_10 = [
-            graph_utils.Location(lat=-71.0923882, lon=42.3598751),
-            graph_utils.Location(lat=-71.0921938, lon=42.359552),
-            graph_utils.Location(lat=-71.0922188, lon=42.3595396),
-            graph_utils.Location(lat=-71.0921294, lon=42.3593786),
-            graph_utils.Location(lat=-71.09166, lon=42.3595362),
-            graph_utils.Location(lat=-71.0919564, lon=42.3600188),
-            graph_utils.Location(lat=-71.0923882, lon=42.3598751)
+            graph_utils.Location(lat=42.3598751, lon=-71.0923882),
+            graph_utils.Location(lat=42.359552, lon=-71.0921938),
+            graph_utils.Location(lat=42.3595396, lon=-71.0922188),
+            graph_utils.Location(lat=42.3593786, lon=-71.0921294),
+            graph_utils.Location(lat=42.3595362, lon=-71.09166),
+            graph_utils.Location(lat=42.3600188, lon=-71.0919564),
+            graph_utils.Location(lat=42.3598751, lon=-71.0923882)
         ]
 
         building_10 = self.polygons["10"]
@@ -137,7 +137,7 @@ class ClosestNodeTests(unittest.TestCase):
         #print(loc_from_google.values)
         #print("Between current location and 1.1.1.b:"+str(distance.distance(loc_from_google.values,node_1.location.values)))
         self.assertEqual(self.graph.get_closest_node(loc_from_google),"1.1.1.b")
-    
+
 class DijkstraTests(unittest.TestCase):
     def setUp(self):
         polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
@@ -188,7 +188,7 @@ class DijkstraTests(unittest.TestCase):
         src = "3.1.1.b"
         dest_building = "2"  # Building number
 
-        expected_path = ["3.1.1.b", "kc.1.2.b", "4.1.1.b", "2.1.4.b"]
+        expected_path = ["3.1.1.b", "kc.1.2.b", "2.1.1.b"]
         expected_dest = expected_path[-1]
         route = self.graph.find_shortest_path(src, dest_building)
 
