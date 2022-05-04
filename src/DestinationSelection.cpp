@@ -57,6 +57,19 @@ void DestinationSelection::display_selection(){
 
     tft->printf("Building: %s\n\n", destination_building_index >= 0 ? BUILDINGS[destination_building_index] : "");
     tft->printf("Floor: %s\n\n\n\n", destination_floor_index >= 0 ? FLOORS[destination_floor_index] : "");
+
+    char scroll_char[20];
+    if (state == BUILDING_SELECTION){
+      sprintf(scroll_char, "building");
+    } else if (state == FLOOR_SELECTION){
+      sprintf(scroll_char, "floor");
+    }
+
+    if (state == BUILDING_SELECTION | state == FLOOR_SELECTION) {
+      tft->printf("Selecting: %s\n", scroll_char);
+      tft->println("Short Press: confirm");
+      tft->println("Long Press: clear\n\n"); 
+    }
 }
 
 void DestinationSelection::get_destination_building(char* building) {
@@ -97,6 +110,7 @@ int DestinationSelection::update(int button_flag) {
 
             if (button_flag == 1) {
                 state = FLOOR_SELECTION;
+                display_selection();
             }
             break;
 
@@ -117,6 +131,7 @@ int DestinationSelection::update(int button_flag) {
 
             if (button_flag == 1) {
                 state = CONFIRM_DESTINATION;
+                display_selection();
                 tft->println("Confirm Selection:\n");
                 tft->println("Short Press: confirm");
                 tft->println("Long Press: cancel\n\n");

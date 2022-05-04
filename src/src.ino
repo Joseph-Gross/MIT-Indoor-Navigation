@@ -43,8 +43,9 @@ int navigation_flag;
 void display_start_message()
 {
   tft.fillScreen(BACKGROUND);
-  tft.println("Welcome to TinyTim, MIT's premiere campus navigator\n");
-  tft.println("Press the button to activate your guide and select a destination.");
+  tft.setCursor(0, 0, 1);
+  tft.println("Welcome to TinyTim, \nMIT's premiere \ncampus navigator\n");
+  tft.println("Press the button to \nactivate your guide \nand select a \ndestination.");
 }
 
 void global_update(int button_flag){
@@ -134,12 +135,15 @@ void setup() {
     tft.setTextSize(1);                     // default font size, change if you want
     tft.fillScreen(TFT_BLACK);              // fill background
     tft.setTextColor(TFT_GREEN, TFT_BLACK); // set color of font to hot pink foreground, black background
+    tft.println("Tiny Tim booting... \nplease wait\n\n");
 
+    tft.println("Initializing Wifi...");
     apiClient.initialize_wifi_connection();
-//    destination_selection.initialize_imu();
-    display_start_message();
-
+    
+    tft.println("Initializing Compass...");
     compass.initialize();
+    
+    display_start_message();
 }
 
 void loop(){
