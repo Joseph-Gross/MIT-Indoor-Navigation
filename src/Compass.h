@@ -13,7 +13,7 @@
 
 // #define BACKGROUND TFT_BLACK // Already defined?
 #define pi 3.14159265
-#define degree_to_rad = 0.0174532925; // pi/180.0
+#define degree_to_rad 0.0174532925; // pi/180.0
 #define root3over2 0.8660254
 #define root3 1.7320508
 
@@ -228,7 +228,6 @@ enum M_MODE {
   M_100HZ = 0x06                // 100 Hz continuous magnetometer
 };
 
-// TODO: Define instance variables and method return types
 class Compass {
   private:
     TFT_eSPI* tft;
@@ -236,6 +235,7 @@ class Compass {
     Vec p1, p2, p3, p4, p5, p6, p7; // the points that define the arrow
     float device_angle; //for storing the angle sensed by magnetometer
     int center_y; // only y center should change We don't need to fit that much on the screen
+    float Mag_x_offset, Mag_y_offset, Mag_z_offset, Mag_x_scale, Mag_y_scale, Mag_z_scale;
     RGB color;
     int length; // based on where we want to center the arrow we should be able to scale its length so it doesn't go off the screen.
     int width;
@@ -299,15 +299,14 @@ class Compass {
     byte readByte(byte address, byte subAddress);
     void readBytes(byte address, byte subAddress, byte count, byte * dest);
     void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
-    void refresh_data();
-    void calc_quaternion();
     int angle_return();
   public:
     Compass(TFT_eSPI* _tft, int center_y);
     void update(int distance, float dir_next_node);
     void initialize();
+    void refresh_data();
+    void calc_quaternion();
     void calibrate();
-    float Mag_x_offset, Mag_y_offset, Mag_z_offset, Mag_x_scale, Mag_y_scale, Mag_z_scale;
 };
 
 

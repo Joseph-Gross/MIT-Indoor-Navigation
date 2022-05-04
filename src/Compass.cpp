@@ -63,8 +63,8 @@ Compass::Compass(TFT_eSPI* _tft, int center_y){
 
 void Compass::update(int distance, float dir_next_node){
   // after figuring out angles, calls the inner update, which takes as arguments float device_angle, int distance, float dir_next_node
-  refresh_data();                              // This must be done each time through the loop
-  calc_quaternion();                           // This must be done each time through the loop
+//  refresh_data();                              // This must be done each time through the loop
+//  calc_quaternion();                           // This must be done each time through the loop
   device_angle = -angle_return(); // function that gets yaw = heading
   color.r = distance;
   color.b = 255-distance;
@@ -1133,4 +1133,3 @@ void Compass::initialize(){
       while (1) ; // Loop forever if communication doesn't happen
     }
 }
-

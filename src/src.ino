@@ -165,6 +165,8 @@ void setup() {
 }
 
 void loop(){
+  compass.refresh_data();                              // This must be done each time through the loop
+  compass.calc_quaternion();                           // This must be done each time through the loop
   int button_flag = button.update();
   global_update(button_flag);
 }
