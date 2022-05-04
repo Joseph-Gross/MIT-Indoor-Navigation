@@ -695,7 +695,6 @@ def calculate_distance(point_1: Location, point_2: Location) -> distance.meters:
     return geodesic(point_1.values, point_2.values).meters
 
 
-
 def calculate_direction(point_1: Location, point_2: Location) -> Optional[float]:
     #const y = math.sin(λ2-λ1) * math.cos(φ2);
     lonA = point_1.lon
@@ -711,7 +710,8 @@ def calculate_direction(point_1: Location, point_2: Location) -> Optional[float]
    
     Δφ = math.log(math.tan( latB / 2 + math.pi / 4 ) / math.tan( latA / 2 + math.pi / 4) )
     Δlon = abs( lonA - lonB )%180  if abs( lonA - lonB ) > 180 else abs( lonA - lonB )
-    return math.atan2( Δlon ,  Δφ ) - math.pi/2
+    return math.atan2( Δlon ,  Δφ )
+
 
 if __name__ == "__main__":
     polygons = parse_polygons(POLYGONS_CSV_FILE_PATH)

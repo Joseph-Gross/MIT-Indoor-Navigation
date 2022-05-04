@@ -290,6 +290,8 @@ StaticJsonDocument<500> ApiClient::fetch_location() {
     offset += sprintf(request + offset, "Content-Length: %d\r\n\r\n", len);
     offset += sprintf(request + offset, "%s\r\n", json_body);
     do_https_request(GOOGLE_SERVER, request, response, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, false);
+    Serial.println(response);
+    Serial.println("----------");
 
     // Parsing response
     char* json_start = strchr(response, '{');
