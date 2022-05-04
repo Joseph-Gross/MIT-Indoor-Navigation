@@ -94,9 +94,10 @@ int Navigation::navigate() {
             break;
 
         case NavigationState::NAVIGATING:
-            if (millis() - compass_update_display_timer > 200) {
+            if (millis() - compass_update_display_timer > 500) {
                 compass->update_display(navigation_instructions.dir_next_node);
                 compass_update_display_timer = millis();
+                display_navigation_instructions();
             }
 
             if (!navigating) {
@@ -119,7 +120,7 @@ void Navigation::display_navigation_instructions() {
     sprintf(destination_str, "Destination: %s", navigation_instructions.dest_building);
     sprintf(eta_str, "ETA: %d seconds", (int) navigation_instructions.eta);
 
-    tft->fillScreen(TFT_BLACK);
+//    tft->fillScreen(TFT_BLACK);
     tft->setCursor(0, 0, 1);
     tft->println(destination_str);
     tft->println(eta_str);
