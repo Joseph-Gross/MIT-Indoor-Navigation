@@ -12,41 +12,37 @@
 #include "Button.h"
 #include "Compass.h"
 #include "Navigation.h"
-//#include "DestinationSelection.h"
+#include "DestinationSelection.h"
 #include "ApiClient.h"
 
-#define BACKGROUND TFT_BLACK
+
+const int BUTTON_PIN = 45;
+Button button(BUTTON_PIN);
 
 // Define global variables
 TFT_eSPI tft = TFT_eSPI();
-// Button on pin 45
-const int BUTTON = 45;
+ApiClient apiClient;
+Navigation navigator(&apiClient, &tft);
+DestinationSelection destination_selection(&tft);
 
 uint8_t current_floor = 1;
-uint8_t destination_floor = 1;
-char destination[MAX_BUILDING_NAME_LENGTH] = "3";
+char destination_building[2];
+char destination_floor[2];
 
 enum global_state
 {
   START,
-  ROOM_SELECT,
-  CONFIRM_DESTINATION,
+  DESTINATION_SELECTION,
   NAVIGATING,
   CONFIRM_CANCEL,
   ARRIVED
 };
 
 global_state state = START;
-global_state previous_state = ARRIVED;
 
-ApiClient apiClient();
-Button button(BUTTON);
-Compass compass(&tft, 80);
-Navigation navigator(&apiClient, &compass, &tft);
-
-DestinationSelection destination_selector();
-
+int destination_selection_flag;
 int navigation_flag;
+
 
 void display_start_message()
 {
@@ -55,55 +51,36 @@ void display_start_message()
   tft.println("Press the button to activate your guide and select a destination.");
 }
 
-void display_confirm_destination_message()
-{
-  tft.fillScreen(BACKGROUND);
-  tft.println("You selected the following destination \n");
-  tft.println(destination);
-  tft.println("\nShort press to continue. Long press to reselect.\n");
-}
-
-void display_destination_selection_instructions()
-{
-  tft.fillScreen(BACKGROUND);
-  tft.println("Tilt screen for number scrolling. \n");
-  tft.println("Short press to confirm destination. \n");
-}
-
-void global_update(int button){
+void global_update(int button_flag){
   switch (state){
     case START:
-      if (button != 0) {
-          state = ROOM_SELECT;
-          display_destination_selection_instructions();
+      if (button_flag != 0) {
+          state = DESTINATION_SELECTION;
+          destination_selection.begin_selection();
+          Serial.println("START -> DESTINATION_SELECTION");
       }
       break;
-    case ROOM_SELECT:
+    case DESTINATION_SELECTION:
       /* 
       Here we choose the building and room we want to travel to. 
       After both a building and room are selected with short presses, 
       we move to the Confirm Destination state.
       */
-      destination_selector.update(button);
+      destination_selection_flag = destination_selection.update(button_flag);
 
-      if (button == 2) {
-        state = CONFIRM_DESTINATION;
-        destination_floor = destination_selector.get_destination_floor();
-        destination = destination_selector.get_destination();
-        display_confirm_destination_message();
-      }
-      break;
-    case CONFIRM_DESTINATION:
-      /* 
-      we stay in this state until either a short press confirms the destination 
-      and we move to navigating, or a long press canceling the destination, 
-      and taking us back to room selection
-      */
-      if (button == 1) {
+      if (destination_selection_flag == 1) {
+          destination_selection.get_destination_building(destination_building);
+          destination_selection.get_destination_floor(destination_floor);
+
+          Serial.printf("Building Selected: %s \n", destination_building);
+          Serial.printf("Floor Selected: %s \n", destination_floor);
+          destination_selection.end_selection();
           state = NAVIGATING;
-          navigator.begin_navigation(current_floor, destination, destination_floor);
+          Serial.println("DESTINATION_SELECTION -> NAVIGATING");
+
+          int _destination_floor = atoi(destination_floor);
+          navigator.begin_navigation(current_floor, destination_building, _destination_floor);
       }
-      if (button == 2) state = ROOM_SELECT;
       break;
     case NAVIGATING:
       /* 
@@ -114,10 +91,18 @@ void global_update(int button){
       */
       navigation_flag = navigator.navigate();
       if (navigation_flag == 1) {
+          Serial.println("NAVIGATING -> ARRIVED");
           state = ARRIVED;
           navigator.end_navigation();
+          tft.fillScreen(BACKGROUND);
+          tft.println("You have arrived! Press button to return to start. \n");
       }
-      if (button == 2) state = CONFIRM_CANCEL;
+      else if (button_flag == 2) {
+          Serial.println("NAVIGATING -> CONFIRM_CANCEL");
+          state = CONFIRM_CANCEL;
+          tft.fillScreen(BACKGROUND);
+          tft.println("Exit navigation? Short press if yes, long press if no. \n");
+      }
       break;
     case CONFIRM_CANCEL:
       /* 
@@ -125,26 +110,17 @@ void global_update(int button){
       canceling the navigation and we move to Start state, 
       or a long press cancels the navigation cancel.
       */
-      if (previous_state!=CONFIRM_CANCEL){
-        tft.fillScreen(BACKGROUND);
-        tft.println("Exit navigation? Short press if yes, long press if no. \n");
-        previous_state = CONFIRM_CANCEL;
-      }
-      if (button == 1) state = START;
-      if (button == 2) state = NAVIGATING;
+      if (button_flag == 1) state = START;
+      if (button_flag == 2) state = NAVIGATING;
       break;
     case ARRIVED:
       /*
       In the arrived state, we will display an arrived 
       message until a short press moves us back to the Start state.  
       */
-      if (previous_state!=ARRIVED){
-        tft.fillScreen(BACKGROUND);
-        tft.println("You have arrived! Press button to return to start. \n");
-        previous_state = ARRIVED;
-      }
-      if (button != 0) {
+      if (button_flag != 0) {
           state = START;
+          Serial.println("ARRIVED -> START");
           display_start_message();
       }
       break;
@@ -152,16 +128,20 @@ void global_update(int button){
 }
 
 void setup() {
-  Serial.begin(115200);                   // Set up serial port
-  tft.init();                             // init screen
-  tft.setRotation(2);                     // adjust rotation
-  tft.setTextSize(1);                     // default font size, change if you want
-  tft.fillScreen(TFT_BLACK);              // fill background
-  tft.setTextColor(TFT_GREEN, TFT_BLACK); // set color of font to hot pink foreground, black background
+    Serial.begin(115200); // Set up serial
+    while(!Serial);
 
-  apiClient.initialize_wifi_connection();
-  compass.initialize();
-  display_start_message();
+    pinMode(BUTTON_PIN, INPUT_PULLUP);
+
+    tft.init();                             // init screen
+    tft.setRotation(2);                     // adjust rotation
+    tft.setTextSize(1);                     // default font size, change if you want
+    tft.fillScreen(TFT_BLACK);              // fill background
+    tft.setTextColor(TFT_GREEN, TFT_BLACK); // set color of font to hot pink foreground, black background
+
+    apiClient.initialize_wifi_connection();
+    destination_selection.initialize_imu();
+    display_start_message();
 }
 
 void loop(){

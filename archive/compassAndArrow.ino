@@ -97,9 +97,6 @@ class Arrow {
 Arrow arrow(&tft);
 
 
-
-
-
 /*
   "quaternion_compass_new_v8.ino"
   Code by LINGIB

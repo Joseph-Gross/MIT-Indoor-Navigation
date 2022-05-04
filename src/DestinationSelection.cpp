@@ -1,145 +1,147 @@
 #include "DestinationSelection.h"
 
-void get_angle(float* x, float* y) {
-  imu.readAccelData(imu.accelCount);
-  *x = imu.accelCount[0] * imu.aRes;
-  *y = imu.accelCount[1] * imu.aRes;
+int mod(int a, int b) {
+    int r = a % b;
+    return r < 0 ? r + b : r;
 }
 
-void lookup(char* query, char* response) {
-  const char space = ' ';
-  char *building;
-  char *floor;
-  int space_ind;
-  for(int i = 0; i< strlen(query); i ++){
-    const char curChar = (query[i]);
-    // if(!strcmp(curChar,space)){
-    if(curChar == space){
-      query[i]= '\0';
-      space_ind = i;
-      building = query;
-      floor = query + space_ind +1;
-      sprintf(destination, "%s", building);
-      destination_floor = floor[0] - '0'; //converts that char to int
-      sprintf(response, "let's find building  %s, floor %s!", building, floor);
-      break;
-    }else{
-      sprintf(response, "You must seperate building and floor with a space!");
-    }
-  }
+const char DestinationSelection::BUILDINGS[NUM_BUILDINGS][5] = {"1", "2", "3", "4", "5", "6", "7", "8", "10", "11"};
+const char DestinationSelection::FLOORS[NUM_FLOORS][5] = {"0", "1"};
+
+const int DestinationSelection::SCROLL_THRESHOLD = 150;
+const float DestinationSelection::ANGLE_THRESHOLD = 0.3;
+
+DestinationSelection::DestinationSelection(TFT_eSPI* _tft){
+    state = IDLE;
+    destination_building_index = -1;
+    destination_floor_index = -1;
+    scroll_timer = millis();
+    tft = _tft;
 }
 
-DestinationSelection::DestinationSelection(){}
+void DestinationSelection::get_angle(float* angle) {
+    imu.readAccelData(imu.accelCount);
+    *angle = imu.accelCount[1] * imu.aRes;
+}
 
-void DestinationSelection::update(int button){
-    float x, y;
-    get_angle(&x, &y); //get angle values
-    char q[50];
-    if(state == 0){
-      strcpy(output,msg);
-      if(button==2){
-        char_index = 0;
-        state = 1;
-        scroll_timer = millis();
-      }
+void DestinationSelection::clear_selection() {
+    destination_building_index = -1;
+    destination_floor_index = -1;
+}
+
+void DestinationSelection::initialize_imu() {
+    if (imu.setupIMU(1)) {
+        Serial.println("IMU Connected!");
+    } else {
+        Serial.println("IMU Not Connected :/");
+        Serial.println("Restarting");
+        ESP.restart(); // restart the ESP (proper way)
     }
-    else if(state==1){
-      if(button==1){
-        char current_letter[50] = {buildings[char_index],buildings[char_index + 1]}; //gets the value at char_index
-        strcat(query_string,current_letter);
-        strcat(query_string, " ");
-        strcpy(output,query_string);
-        // char_index =0;
-        state = 4;
-      }else if(millis() - scroll_timer >= scroll_threshold){
-        if (abs(angle) > angle_threshold){
-          if(angle>0){
-            if(char_index == (strlen(buildings)-2)){
-              char_index = 0;
-            }else{
-              char_index = char_index +2; // go forward
-            }
-          }
-          if(angle<0){
-            if(char_index==0){
-              char_index = strlen(buildings)-2;
-            }else{
-              char_index = char_index-2; //go backward
-            }
-          }
-        }
-        scroll_timer = millis();
-      }
-      char current_letter[50]={buildings[char_index],buildings[char_index+1]}; //again gets value at char_index
-      strcpy(output,query_string);
-      strcat(output,current_letter);
-      if(button==2){ //
-        state=2;
-        strcpy(output,"");
-      }
-    }else if(state==2){
-      strcpy(msg,"calculating..");
-      strcpy(output,msg);
-      state=3;
-    }else if(state==3){
+}
 
-      Serial.printf("**********%s\n",query_string);
-      sprintf(q,"%s",query_string);
+void DestinationSelection::begin_selection() {
+    selecting = true;
+}
 
-      lookup(q,msg);
-      strcpy(output,msg);
-      strcpy(query_string,"");
-      strcpy(encrypted_query_string,"");
-      state=0;
+void DestinationSelection::end_selection() {
+    selecting = false;
+}
+
+void DestinationSelection::display_selection(){
+    tft->fillScreen(TFT_BLACK);
+    tft->setCursor(0, 0, 1);
+    tft->println("Destination Selection \n\n");
+
+    tft->printf("Building: %s\n\n", destination_building_index >= 0 ? BUILDINGS[destination_building_index] : "");
+    tft->printf("Floor: %s\n\n\n\n", destination_floor_index >= 0 ? FLOORS[destination_floor_index] : "");
+}
+
+void DestinationSelection::get_destination_building(char* building) {
+    strcpy(building, BUILDINGS[destination_building_index]);
+}
+
+void DestinationSelection::get_destination_floor(char* floor) {
+    strcpy(floor, FLOORS[destination_floor_index]);
+}
+
+int DestinationSelection::update(int button_flag) {
+    float angle;
+    get_angle(&angle);
+    int flag = 0;
+
+    switch(state) {
+        case IDLE:
+            if (selecting) {
+                state = BUILDING_SELECTION;
+                display_selection();
+            }
+            break;
+
+        case BUILDING_SELECTION:
+            if (abs(angle) > ANGLE_THRESHOLD) {
+                if (millis() - scroll_timer > SCROLL_THRESHOLD) {
+                    if (angle > 0) {
+                        destination_building_index++;
+                    } else {
+                        destination_building_index--;
+                    }
+
+                    destination_building_index = mod(destination_building_index, NUM_BUILDINGS);
+                    scroll_timer = millis();
+                    display_selection();
+                }
+            }
+
+            if (button_flag == 1) {
+                state = FLOOR_SELECTION;
+            }
+            break;
+
+        case FLOOR_SELECTION:
+            if (abs(angle) > ANGLE_THRESHOLD) {
+                if (millis() - scroll_timer > SCROLL_THRESHOLD) {
+                    if (angle > 0) {
+                        destination_floor_index++;
+                    } else {
+                        destination_floor_index--;
+                    }
+
+                    destination_floor_index = mod(destination_floor_index, NUM_FLOORS);
+                    scroll_timer = millis();
+                    display_selection();
+                }
+            }
+
+            if (button_flag == 1) {
+                state = CONFIRM_DESTINATION;
+                tft->println("Confirm Selection:\n");
+                tft->println("Short Press: confirm");
+                tft->println("Long Press: cancel\n\n");
+            } else if (button_flag == 2) {
+                clear_selection();
+                display_selection();
+                state = BUILDING_SELECTION;
+            }
+            break;
+
+        case CONFIRM_DESTINATION:
+            if (button_flag == 1) {
+                flag = 1;
+                state = DESTINATION_SELECTED;
+                tft->println("Confirmed!!");
+            } else if (button_flag == 2) {
+                clear_selection();
+                display_selection();
+                state = BUILDING_SELECTION;
+            }
+            break;
+
+        case DESTINATION_SELECTED:
+            if (!selecting) {
+                clear_selection();
+                state = IDLE;
+            }
     }
-    else if(state==4){
-        if(button==1){
-        // char current_letter[50] = {rooms[char_index][char_index2],rooms[char_index][char_index2+1],rooms[char_index][char_index2+2] }; //gets the value at char_index
-        char current_letter[50] = {floors[char_index2]};
-        strcat(query_string,current_letter);
-        strcpy(output,query_string);
-        char_index2 =0;
-        state = 2;
-      }else if(millis() - scroll_timer >= scroll_threshold){
-        if (abs(angle) > angle_threshold){
-          if(angle>0){
-            if(char_index2 == (strlen(floors[char_index])-1)){
-              char_index2 = 0;
-            }else{
-              char_index2 = char_index2 +1; // go forward
-            }
-          }
-          if(angle<0){
-            if(char_index2==0){
-              char_index2 = strlen(floors[char_index])-1;
-            }else{
-              char_index2 = char_index2-1; //go backward
-            }
-          }
-        }
-        scroll_timer = millis();
-      }
-      // char current_letter[50]={alphabet2[char_index]}; //again gets value at char_index
-      // char current_letter[50] = {rooms[char_index][char_index2],rooms[char_index][char_index2+1],rooms[char_index][char_index2+2] }; //gets the value at char_index
-      char current_letter[50] = {floors[char_index2]};
-      strcat(output,current_letter);
-      if(button==2){ //
-        state=2;
-        strcpy(output,"");
-      }
-    }
-};
 
-void DestinationSelection::display(){
-    // tft.fillScreen(TFT_BLACK);
-    // tft.setCursor(0, 0, 1);
-    // tft.println(output);
-};
-
-char* DestinationSelection::get_destination() {
-    return destination;
-};
-
-int DestinationSelection::get_destination_floor() {
-    return destination_floor;
-};
+    return flag;
+}

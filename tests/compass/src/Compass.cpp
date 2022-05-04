@@ -309,11 +309,8 @@ void Compass::getAres() {
   }
 }
 
-// -------------------
-// readAccelData()
-// -------------------
 /* Read accelerometer registers */
-void Compass::readAccelData(short * destination)
+void Compass::readAccelData(short* destination)
 {
   byte rawData[6];  // x/y/z accel register data stored here
   readBytes(MPU9250_ADDRESS, ACCEL_XOUT_H, 6, &rawData[0]);  // Read the six raw data registers into data array
@@ -326,7 +323,7 @@ void Compass::readAccelData(short * destination)
 // readGyroData()
 // -------------------
 /* Read gyro registers */
-void Compass::readGyroData(short * destination)
+void Compass::readGyroData(short* destination)
 {
   byte rawData[6];  // x/y/z gyro register data stored here
   readBytes(MPU9250_ADDRESS, GYRO_XOUT_H, 6, &rawData[0]);  // Read the six raw data registers sequentially into data array
@@ -339,7 +336,7 @@ void Compass::readGyroData(short * destination)
 // readMagData()
 // -------------------
 /* Read magnetometer registers */
-void Compass::readMagData(short * destination)
+void Compass::readMagData(short* destination)
 {
   byte rawData[7];  // x/y/z gyro register data, ST2 register stored here, must read ST2 at end of data acquisition
   if (readByte(AK8963_ADDRESS, AK8963_ST1) & 0x01) { // wait for magnetometer data ready bit to be set
@@ -368,7 +365,7 @@ short Compass::readTempData()
 // initAK8963()
 // -------------------
 /* Initialize the AK8963 magnetometer */
-void Compass::initAK8963(float * destination)
+void Compass::initAK8963(float* destination)
 {
   // First extract the factory calibration for each magnetometer axis
   byte rawData[3];  // x/y/z gyro calibration data stored here
@@ -458,7 +455,7 @@ void Compass::initMPU9250()
   Function which accumulates gyro and accelerometer data after device initialization. It calculates the average
   of the at-rest readings and then loads the resulting offsets into accelerometer and gyro bias registers.
 */
-void Compass::calibrateMPU9250(float * dest1, float * dest2)
+void Compass::calibrateMPU9250(float* dest1, float* dest2)
 {
   byte data[12]; // data array to hold accelerometer and gyro x, y, z, data
   unsigned short ii, packet_count, fifo_count;
@@ -626,7 +623,7 @@ void Compass::calibrateMPU9250(float * dest1, float * dest2)
   Function which accumulates magnetometer data after device initialization.
   It calculates the bias and scale in the x, y, and z axes.
 */
-void Compass::magCalMPU9250(float * bias_dest, float * scale_dest)
+void Compass::magCalMPU9250(float* bias_dest, float* scale_dest)
 {
   unsigned short ii = 0, sample_count = 0;
   short mag_max[3]  = { -32768, -32768, -32768},
@@ -711,7 +708,7 @@ void Compass::magCalMPU9250(float * bias_dest, float * scale_dest)
 // MPU9250SelfTest()
 // ------------------
 /* Accelerometer and gyroscope self test; check calibration wrt factory settings */
-void Compass::MPU9250SelfTest(float * destination) // Should return percent deviation from factory trim values, +/- 14 or less deviation is a pass
+void Compass::MPU9250SelfTest(float* destination) // Should return percent deviation from factory trim values, +/- 14 or less deviation is a pass
 {
   byte rawData[6] = {0, 0, 0, 0, 0, 0};
   byte selfTest[6];
@@ -948,7 +945,13 @@ void Compass::refresh_data()
     ax = (float)accelCount[0] * aRes;                   // - accelBias[0];  // get actual g value, this depends on scale being set
     ay = (float)accelCount[1] * aRes;                   // - accelBias[1];
     az = (float)accelCount[2] * aRes;                   // - accelBias[2];
+<<<<<<< HEAD
 //    Serial.printf("Ax: %f \n Ay: %f \n Az: %f \n", ax, ay, az);
+=======
+
+    Serial.printf("Ax: %f \n Ay: %f \n Az: %f \n", ax, ay, az);
+
+>>>>>>> f36adb3 (MVP v0)
     // ----- Gyro calculations
     readGyroData(gyroCount);                            // Read the gyro registers
     getGres();                                          // Get gyro resolution
@@ -958,6 +961,8 @@ void Compass::refresh_data()
     gy = (float)gyroCount[1] * gRes;
     gz = (float)gyroCount[2] * gRes;
 //    Serial.printf("gx: %f \n gy: %f \n gz: %f \n", gx, gy, gz);
+
+    Serial.printf("Gx: %f \n Gy: %f \n Gz: %f \n", gx, gy, gz);
 
     // ----- Magnetometer calculations
     readMagData(magCount);                              // Read the magnetometer x|y| registers
@@ -1046,7 +1051,7 @@ int Compass::angle_return()
   */
   float heading = yaw;
   if (heading < 0) heading += 360.0;                        // Yaw goes negative between 180 amd 360 degrees
-  if (True_North == true) heading += Declination;           // Calculate True North
+  if (True_North) heading += Declination;           // Calculate True North
   if (heading < 0) heading += 360.0;                        // Allow for under|overflow
   if (heading >= 360) heading -= 360.0;
 //  Serial.println(pitch);

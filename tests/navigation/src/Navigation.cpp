@@ -116,8 +116,8 @@ void Navigation::display_navigation_instructions() {
     char destination_str[100];
     char eta_str[100];
 
-    sprintf(destination_str, "Destination: %s", navigation_instructions.dest_node);
-    sprintf(eta_str, "ETA: %f seconds", navigation_instructions.eta);
+    sprintf(destination_str, "Destination: %s", navigation_instructions.dest_building);
+    sprintf(eta_str, "ETA: %d seconds", (int) navigation_instructions.eta);
 
     tft->fillScreen(TFT_BLACK);
     tft->setCursor(0, 0, 1);
@@ -127,6 +127,7 @@ void Navigation::display_navigation_instructions() {
 
 void Navigation::display_routing_message() {
     tft->fillScreen(TFT_BLACK);
+    tft->setCursor(0, 0, 1);
     tft->println("Routing...\n");
     tft->println("Finding the best path to your destination");
 }

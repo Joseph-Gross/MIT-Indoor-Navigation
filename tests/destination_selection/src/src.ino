@@ -32,10 +32,10 @@ void loop() {
 
     if (destination_flag == 1) {
         char building[2];
-        char floor[2];
+        uint8_t floor;
 
         destination_selection.get_destination_building(building);
-        destination_selection.get_destination_floor(floor);
+        destination_selection.get_destination_floor(&floor);
 
         Serial.printf("Building Selected: %s \n", building);
         Serial.printf("Floor Selected: %s \n", floor);

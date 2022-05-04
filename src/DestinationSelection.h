@@ -5,29 +5,42 @@
 
 #include <Arduino.h>
 #include <TFT_eSPI.h>
+#include <mpu6050_esp32.h>
 
-const uint8_t MAX_BUILDING_NAME_LENGTH = 25;
-enum destination_selection_state {};
+const int NUM_BUILDINGS = 10;
+const int NUM_FLOORS = 2;
+
+enum destination_selection_state {IDLE, BUILDING_SELECTION, FLOOR_SELECTION, CONFIRM_DESTINATION, DESTINATION_SELECTED};
 
 class DestinationSelection {
 
+    static const char BUILDINGS[NUM_BUILDINGS][5];
+    static const char FLOORS[NUM_FLOORS][5];
+
+    static const int SCROLL_THRESHOLD;
+    static const float ANGLE_THRESHOLD;
+
     destination_selection_state state;
-    char destination[MAX_BUILDING_NAME_LENGTH];
-    int destination_floor;
-    char output[1000];
-    char buildings[50] = "010305071113101204060208162638";
-    char floors[4] = "01";
+    int destination_building_index;
+    int destination_floor_index;
 
-    // TODO: Consider refactoring so that buildings and floors are a list of chars/ints and the scroll updates the index
-    // of the curr value within the list (for example i would ++ when esp is tilted and modulo num buildings gets applied
-    // to prevent index out of bounds error
+    uint32_t scroll_timer;
+    TFT_eSPI* tft;
+    MPU6050 imu;
 
+    bool selecting;
+
+    void get_angle(float* angle);
+    void clear_selection();
+    void display_selection();
 public:
-    DestinationSelection();
-    void update(int button);
-    void display();
-    char* get_destination();
-    int get_destination_floor();
+    DestinationSelection(TFT_eSPI* _tft);
+    void initialize_imu();
+    void begin_selection();
+    void end_selection();
+    void get_destination_building(char* building);
+    void get_destination_floor(char* floor);
+    int update(int button_flag);
 };
 
 
