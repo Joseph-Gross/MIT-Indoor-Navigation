@@ -3,6 +3,7 @@
 #ifndef INC_6_08_PATH_FINDING_DESTINATIONSELECTION_H
 #define INC_6_08_PATH_FINDING_DESTINATIONSELECTION_H
 
+#include "Compass.h"
 #include <Arduino.h>
 #include <TFT_eSPI.h>
 #include <mpu6050_esp32.h>
@@ -27,6 +28,7 @@ class DestinationSelection {
     uint32_t scroll_timer;
     TFT_eSPI* tft;
     MPU6050 imu;
+    Compass* compass;
 
     bool selecting;
 
@@ -34,7 +36,7 @@ class DestinationSelection {
     void clear_selection();
     void display_selection();
 public:
-    DestinationSelection(TFT_eSPI* _tft);
+    DestinationSelection(TFT_eSPI* _tft, Compass* _compass);
     void initialize_imu();
     void begin_selection();
     void end_selection();

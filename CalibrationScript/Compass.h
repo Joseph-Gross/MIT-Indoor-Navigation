@@ -304,7 +304,7 @@ class Compass {
     int angle_return();
   public:
     Compass(TFT_eSPI* _tft, int center_y);
-    void update(int distance, float dir_next_node);
+    void update_display(int distance, float dir_next_node);
     void initialize();
     void calibrate();
 };

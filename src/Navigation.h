@@ -5,7 +5,7 @@
 
 #include "ApiClient.h"
 #include <ArduinoJson.h>
-//#include "Compass.h"
+#include "Compass.h"
 #include <TFT_eSPI.h>
 
 const uint8_t MAX_BUILDING_NAME_LENGTH = 10;
@@ -37,7 +37,7 @@ class Navigation {
 
     NavigationState state;
     ApiClient* apiClient;
-//    Compass* compass;
+    Compass* compass;
     TFT_eSPI* tft;
 
     uint32_t navigation_update_timer;
@@ -48,12 +48,13 @@ class Navigation {
     char destination[MAX_BUILDING_NAME_LENGTH];
     uint8_t destination_floor;
 
+    uint32_t compass_update_display_timer;
+
     struct NavigationInstructions navigation_instructions;
     void display_navigation_instructions();
     void display_routing_message();
 public:
-//    Navigation(ApiClient* client, Compass* _compass, TFT_eSPI* _tft);
-    Navigation(ApiClient* client, TFT_eSPI* _tft);
+    Navigation(ApiClient* client, Compass* _compass, TFT_eSPI* _tft);
     void fetch_current_location();
     void fetch_navigation_instructions();
     void begin_navigation(uint8_t _current_floor, char* _destination, uint8_t _destination_floor);

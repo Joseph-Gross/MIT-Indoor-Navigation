@@ -286,27 +286,28 @@ class Compass {
     void getMres();
     void getGres();
     void getAres();
-    void readAccelData(short * destination);
-    void readGyroData(short * destination);
-    void readMagData(short * destination);
+    void readAccelData(short* destination);
+    void readGyroData(short* destination);
+    void readMagData(short* destination);
     short readTempData();
-    void initAK8963(float * destination);
+    void initAK8963(float* destination);
     void initMPU9250();
-    void calibrateMPU9250(float * dest1, float * dest2);
-    void magCalMPU9250(float * bias_dest, float * scale_dest);
-    void MPU9250SelfTest(float * destination);
+    void calibrateMPU9250(float* dest1, float* dest2);
+    void magCalMPU9250(float* bias_dest, float* scale_dest);
+    void MPU9250SelfTest(float* destination);
     void writeByte(byte address, byte subAddress, byte data);
     byte readByte(byte address, byte subAddress);
-    void readBytes(byte address, byte subAddress, byte count, byte * dest);
+    void readBytes(byte address, byte subAddress, byte count, byte* dest);
     void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
     int angle_return();
   public:
     Compass(TFT_eSPI* _tft, int center_y);
-    void update(int distance, float dir_next_node);
+    void update_display(float dir_next_node);
     void initialize();
     void refresh_data();
     void calc_quaternion();
     void calibrate();
+    float get_ay();
 };
 
 

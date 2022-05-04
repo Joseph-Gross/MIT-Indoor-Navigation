@@ -1,17 +1,12 @@
 // Import statements
 #include "Navigation.h"
 
-//Navigation::Navigation(ApiClient* client, Compass* _compass, TFT_eSPI* _tft){
-//    apiClient = client;
-//    compass = _compass;
-//    tft = _tft;
-//}
 
-Navigation::Navigation(ApiClient* client, TFT_eSPI* _tft){
+Navigation::Navigation(ApiClient* client, Compass* _compass, TFT_eSPI* _tft){
     apiClient = client;
+    compass = _compass;
     tft = _tft;
 }
-
 
 const uint16_t Navigation::NAVIGATION_UPDATE_LOOP_DURATION = 10000;
 char Navigation::USER_ID[] = "Team8";
@@ -95,10 +90,15 @@ int Navigation::navigate() {
 
             if (navigation_instructions.has_arrived) flag = 1;
             display_navigation_instructions();
-//            compass->update(navigation_instructions.dir_next_node, navigation_instructions.dist_next_node);
+            compass_update_display_timer = millis();
             break;
 
         case NavigationState::NAVIGATING:
+            if (millis() - compass_update_display_timer > 200) {
+                compass->update_display(navigation_instructions.dir_next_node);
+                compass_update_display_timer = millis();
+            }
+
             if (!navigating) {
                 state = NavigationState::IDLE;
                 Serial.println("NAVIGATING -> IDLE");

@@ -3,8 +3,8 @@
 
 Compass::Compass(TFT_eSPI* _tft, int center_y){
   tft = _tft;
-  center.x = center_x;
-  center.y = center_y; // only y center should change We don't need to fit that much on the screen
+  center.x = (float)center_x;
+  center.y = (float)center_y; // only y center should change We don't need to fit that much on the screen
   color.r = 0;
   color.g = 0;
   color.b = 255;
@@ -49,9 +49,9 @@ Compass::Compass(TFT_eSPI* _tft, int center_y){
   q[1] = 0.0f;  
   q[2] = 0.0f;           // vector to hold quaternion
   q[3] = 0.0f;
-  eInt[1] = 0.0f;  
-  eInt[2] = 0.0f;     
-  eInt[3] = 0.0f;            // vector to hold integral error for Mahony method
+  eInt[0] = 0.0f;
+  eInt[1] = 0.0f;
+  eInt[2] = 0.0f;            // vector to hold integral error for Mahony method
   ax=0, ay=0, az=0, gx=0, gy=0, gz=0, mx=0, my=0, mz=0; 
   length = 70;
   width = 12;
@@ -61,16 +61,19 @@ Compass::Compass(TFT_eSPI* _tft, int center_y){
   int bottom_limit = 159; //bottom of screen limit
 }
 
-void Compass::update(int distance, float dir_next_node){
+void Compass::update_display(float dir_next_node){
+    tft->fillScreen(TFT_BLACK);
   // after figuring out angles, calls the inner update, which takes as arguments float device_angle, int distance, float dir_next_node
-//  refresh_data();                              // This must be done each time through the loop
-//  calc_quaternion();                           // This must be done each time through the loop
+  refresh_data();                              // This must be done each time through the loop
+  calc_quaternion();                           // This must be done each time through the loop
   device_angle = -angle_return(); // function that gets yaw = heading
-  color.r = distance;
-  color.b = 255-distance;
+//  Serial.println(device_angle);
+  
+  color.r = 0;
+  color.b = 255;
   // angle -= pi/2.0; // to make it point North // THIS WILL ACCEPT AN ANGLE OFFSET FROM EAST
-  // float angle_rad = degree_to_rad*angle; // angle already in radians!
-  device_angle-=dir_next_node;
+  float angle_rad = 0.0174532925*device_angle; // angle already in radians!
+  device_angle = angle_rad - dir_next_node;
   float hl = length/2.0;
   float hw = width/2.0;
   float s = sin(device_angle);
@@ -92,11 +95,14 @@ void Compass::update(int distance, float dir_next_node){
   tft->fillTriangle(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y, ST7735_GREEN);
   tft->fillTriangle(p1.x, p1.y, p4.x, p4.y, p3.x, p3.y, ST7735_GREEN);
   tft->fillTriangle(p5.x, p5.y, p6.x, p6.y, p7.x, p7.y, ST7735_GREEN);
+  Serial.printf("Angle: %f", -device_angle/0.0174532925);
 }
 
 
 // we should have a callibrate function. It will tell the user to tumble for thirty seconds and then it will automatically update the offsets. but this will be for next week.
-void Compass::calibrate(){
+void Compass::calibrate()
+{
+    Serial.println("Compass::calibrate()");
   // after figuring out angles, calls the inner update, which takes as arguments float device_angle, int distance, float dir_next_node
   tft->fillScreen(BACKGROUND);
   tft->setCursor(0, 0);
@@ -163,7 +169,6 @@ void Compass::calibrate(){
   // Serial.println(F(";"));
   // The line to change is about line 11 in compass.cpp
 }
-
 
 
 
@@ -303,11 +308,8 @@ void Compass::getAres() {
   }
 }
 
-// -------------------
-// readAccelData()
-// -------------------
 /* Read accelerometer registers */
-void Compass::readAccelData(short * destination)
+void Compass::readAccelData(short* destination)
 {
   byte rawData[6];  // x/y/z accel register data stored here
   readBytes(MPU9250_ADDRESS, ACCEL_XOUT_H, 6, &rawData[0]);  // Read the six raw data registers into data array
@@ -320,7 +322,7 @@ void Compass::readAccelData(short * destination)
 // readGyroData()
 // -------------------
 /* Read gyro registers */
-void Compass::readGyroData(short * destination)
+void Compass::readGyroData(short* destination)
 {
   byte rawData[6];  // x/y/z gyro register data stored here
   readBytes(MPU9250_ADDRESS, GYRO_XOUT_H, 6, &rawData[0]);  // Read the six raw data registers sequentially into data array
@@ -333,7 +335,7 @@ void Compass::readGyroData(short * destination)
 // readMagData()
 // -------------------
 /* Read magnetometer registers */
-void Compass::readMagData(short * destination)
+void Compass::readMagData(short* destination)
 {
   byte rawData[7];  // x/y/z gyro register data, ST2 register stored here, must read ST2 at end of data acquisition
   if (readByte(AK8963_ADDRESS, AK8963_ST1) & 0x01) { // wait for magnetometer data ready bit to be set
@@ -362,7 +364,7 @@ short Compass::readTempData()
 // initAK8963()
 // -------------------
 /* Initialize the AK8963 magnetometer */
-void Compass::initAK8963(float * destination)
+void Compass::initAK8963(float* destination)
 {
   // First extract the factory calibration for each magnetometer axis
   byte rawData[3];  // x/y/z gyro calibration data stored here
@@ -452,7 +454,7 @@ void Compass::initMPU9250()
   Function which accumulates gyro and accelerometer data after device initialization. It calculates the average
   of the at-rest readings and then loads the resulting offsets into accelerometer and gyro bias registers.
 */
-void Compass::calibrateMPU9250(float * dest1, float * dest2)
+void Compass::calibrateMPU9250(float* dest1, float* dest2)
 {
   byte data[12]; // data array to hold accelerometer and gyro x, y, z, data
   unsigned short ii, packet_count, fifo_count;
@@ -620,7 +622,7 @@ void Compass::calibrateMPU9250(float * dest1, float * dest2)
   Function which accumulates magnetometer data after device initialization.
   It calculates the bias and scale in the x, y, and z axes.
 */
-void Compass::magCalMPU9250(float * bias_dest, float * scale_dest)
+void Compass::magCalMPU9250(float* bias_dest, float* scale_dest)
 {
   unsigned short ii = 0, sample_count = 0;
   short mag_max[3]  = { -32768, -32768, -32768},
@@ -705,7 +707,7 @@ void Compass::magCalMPU9250(float * bias_dest, float * scale_dest)
 // MPU9250SelfTest()
 // ------------------
 /* Accelerometer and gyroscope self test; check calibration wrt factory settings */
-void Compass::MPU9250SelfTest(float * destination) // Should return percent deviation from factory trim values, +/- 14 or less deviation is a pass
+void Compass::MPU9250SelfTest(float* destination) // Should return percent deviation from factory trim values, +/- 14 or less deviation is a pass
 {
   byte rawData[6] = {0, 0, 0, 0, 0, 0};
   byte selfTest[6];
@@ -836,6 +838,7 @@ void Compass::readBytes(byte address, byte subAddress, byte count, byte * dest)
 void Compass::MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
 {
   float q1 = q[0], q2 = q[1], q3 = q[2], q4 = q[3];   // short name local variable for readability
+//  Serial.printf("quaternion: \n 0 %f \n, 1 %f \n, 2 %f \n, 3 %f \n", q1, q2, q3, q4);
   float norm;
   float hx, hy, bx, bz;
   float vx, vy, vz, wx, wy, wz;
@@ -930,6 +933,7 @@ void Compass::MahonyQuaternionUpdate(float ax, float ay, float az, float gx, flo
 /* Get current MPU-9250 register values */
 void Compass::refresh_data()
 {
+//  Serial.println("Compass::refresh_data()");
   // ----- If intPin goes high, all data registers have new data
   if (readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
   {
@@ -940,6 +944,7 @@ void Compass::refresh_data()
     ax = (float)accelCount[0] * aRes;                   // - accelBias[0];  // get actual g value, this depends on scale being set
     ay = (float)accelCount[1] * aRes;                   // - accelBias[1];
     az = (float)accelCount[2] * aRes;                   // - accelBias[2];
+//    Serial.printf("Ax: %f \n Ay: %f \n Az: %f \n", ax, ay, az);
 
     // ----- Gyro calculations
     readGyroData(gyroCount);                            // Read the gyro registers
@@ -949,6 +954,9 @@ void Compass::refresh_data()
     gx = (float)gyroCount[0] * gRes; // get actual gyro value, this depends on scale being set
     gy = (float)gyroCount[1] * gRes;
     gz = (float)gyroCount[2] * gRes;
+//    Serial.printf("gx: %f \n gy: %f \n gz: %f \n", gx, gy, gz);
+
+//    Serial.printf("Gx: %f \n Gy: %f \n Gz: %f \n", gx, gy, gz);
 
     // ----- Magnetometer calculations
     readMagData(magCount);                              // Read the magnetometer x|y| registers
@@ -980,6 +988,7 @@ void Compass::refresh_data()
     mx = ((float)magCount[0] * mRes * magCalibration[0] - magBias[0]) * magScale[0];    // (rawMagX*ASAX*0.6 - magOffsetX)*scalefactor
     my = ((float)magCount[1] * mRes * magCalibration[1] - magBias[1]) * magScale[1];    // (rawMagY*ASAY*0.6 - magOffsetY)*scalefactor
     mz = ((float)magCount[2] * mRes * magCalibration[2] - magBias[2]) * magScale[2];    // (rawMagZ*ASAZ*0.6 - magOffsetZ)*scalefactor
+//    Serial.printf("mx: %f \n my: %f \n mz: %f \n", mx, my, mz);
   }
 }
 
@@ -989,6 +998,7 @@ void Compass::refresh_data()
 /* Send current MPU-9250 register values to Mahony quaternion filter */
 void Compass::calc_quaternion()
 {
+//    Serial.println("Compass::calc_quaternion()");
   Now = micros();
   deltat = ((Now - lastUpdate) / 1000000.0f); // set integration time by time elapsed since last filter update
   lastUpdate = Now;
@@ -1022,6 +1032,7 @@ void Compass::calc_quaternion()
 /* Gets the heading (yaw) of the device */
 int Compass::angle_return()
 {
+//  Serial.printf("quaternion: \n 0 %f \n, 1 %f \n, 2 %f \n, 3 %f \n", q[0], q[1], q[2], q[3]);
     // ----- calculate pitch , roll, and yaw (radians)
   pitch = asin(2.0f * (q[1] * q[3] - q[0] * q[2]));
   roll  = -atan2(2.0f * (q[0] * q[1] + q[2] * q[3]), q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3]);
@@ -1035,19 +1046,23 @@ int Compass::angle_return()
   */
   float heading = yaw;
   if (heading < 0) heading += 360.0;                        // Yaw goes negative between 180 amd 360 degrees
-  if (True_North == true) heading += Declination;           // Calculate True North
+  if (True_North) heading += Declination;           // Calculate True North
   if (heading < 0) heading += 360.0;                        // Allow for under|overflow
   if (heading >= 360) heading -= 360.0;
-
+//  Serial.println(pitch);
+//  Serial.println(roll);
+//  Serial.println("previous two were pitch and roll, next two are yaw and heading, which should differ by declination");
+//  Serial.println(yaw);
+  Serial.printf("Heading: %f \n", heading);
   return heading;
 }
 
 
 void Compass::initialize(){
+    Serial.println("Compass::initialize()");
     Wire.begin();
     Wire.setClock(400000);                            // 400 kbit/sec I2C speed
-    // while (!Serial);                                  // required for Feather M4 Express
-    // Serial.begin(115200);
+
     // ----- Display title
     Serial.println(F("MPU-9250 Quaternion Compass"));
     Serial.println("");
@@ -1132,4 +1147,11 @@ void Compass::initialize(){
       Serial.println("");
       while (1) ; // Loop forever if communication doesn't happen
     }
+
+    Serial.println("Compass::initialize() completed");
+}
+
+
+float Compass:: get_ay() {
+    return ay;
 }

@@ -31,7 +31,7 @@ void loop() {
     if (millis()-timer > 1000){
       tft.fillScreen(TFT_BLACK); 
       Serial.println("Updating compass");
-      compass.update(1, 0);
+      compass.update_display(1, 0);
       
       timer = millis();
     }

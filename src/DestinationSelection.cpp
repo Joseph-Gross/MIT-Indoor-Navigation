@@ -11,17 +11,20 @@ const char DestinationSelection::FLOORS[NUM_FLOORS][5] = {"0", "1"};
 const int DestinationSelection::SCROLL_THRESHOLD = 150;
 const float DestinationSelection::ANGLE_THRESHOLD = 0.3;
 
-DestinationSelection::DestinationSelection(TFT_eSPI* _tft){
+DestinationSelection::DestinationSelection(TFT_eSPI* _tft, Compass* _compass){
     state = IDLE;
     destination_building_index = -1;
     destination_floor_index = -1;
     scroll_timer = millis();
     tft = _tft;
+    compass = _compass;
 }
 
 void DestinationSelection::get_angle(float* angle) {
-    imu.readAccelData(imu.accelCount);
-    *angle = imu.accelCount[1] * imu.aRes;
+//    imu.readAccelData(imu.accelCount);
+//    *angle = imu.accelCount[1] * imu.aRes;
+
+    *angle = compass->get_ay();
 }
 
 void DestinationSelection::clear_selection() {

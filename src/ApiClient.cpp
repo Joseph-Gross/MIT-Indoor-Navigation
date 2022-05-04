@@ -235,11 +235,11 @@ void ApiClient::do_https_request(char *host, char *request, char *response, uint
         { // read out remaining text (body of response)
             char_append(response, client.read(), response_size);
         }
-//        if (serial)
-//            Serial.println(response);
+        if (serial)
+            Serial.println(response);
         client.stop();
-//        if (serial)
-//            Serial.println("-----------");
+        if (serial)
+            Serial.println("-----------");
     }
     else
     {

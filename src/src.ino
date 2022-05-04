@@ -1,19 +1,14 @@
 // Import statements
-#include <SPI.h>
-#include <TFT_eSPI.h>
-#include <WiFiClientSecure.h>
-#include <WiFiClient.h>
-#include <string.h>
-//#include <Adafruit_GFX.h>    // Core graphics library NEEDED FOR COMPASS DISPLAY
-//#include <Adafruit_ST7735.h> // Hardware-specific library NEEDED FOR COMPASS SENSING
-#include <math.h>
-#include <Wire.h>
-
 #include "Button.h"
 #include "Compass.h"
 #include "Navigation.h"
 #include "DestinationSelection.h"
 #include "ApiClient.h"
+
+#include <SPI.h>
+#include <TFT_eSPI.h>
+#include <string.h>
+#include <math.h>
 
 
 const int BUTTON_PIN = 45;
@@ -22,8 +17,9 @@ Button button(BUTTON_PIN);
 // Define global variables
 TFT_eSPI tft = TFT_eSPI();
 ApiClient apiClient;
-Navigation navigator(&apiClient, &tft);
-DestinationSelection destination_selection(&tft);
+Compass compass(&tft, 80);
+Navigation navigator(&apiClient, &compass, &tft);
+DestinationSelection destination_selection(&tft, &compass);
 
 uint8_t current_floor = 1;
 char destination_building[2];
@@ -140,8 +136,10 @@ void setup() {
     tft.setTextColor(TFT_GREEN, TFT_BLACK); // set color of font to hot pink foreground, black background
 
     apiClient.initialize_wifi_connection();
-    destination_selection.initialize_imu();
+//    destination_selection.initialize_imu();
     display_start_message();
+
+    compass.initialize();
 }
 
 void loop(){

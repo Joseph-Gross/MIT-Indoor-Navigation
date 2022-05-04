@@ -61,7 +61,7 @@ Compass::Compass(TFT_eSPI* _tft, int center_y){
   int bottom_limit = 159; //bottom of screen limit
 }
 
-void Compass::update(int distance, float dir_next_node){
+void Compass::update_display(int distance, float dir_next_node){
   // after figuring out angles, calls the inner update, which takes as arguments float device_angle, int distance, float dir_next_node
   refresh_data();                              // This must be done each time through the loop
   calc_quaternion();                           // This must be done each time through the loop
@@ -945,13 +945,8 @@ void Compass::refresh_data()
     ax = (float)accelCount[0] * aRes;                   // - accelBias[0];  // get actual g value, this depends on scale being set
     ay = (float)accelCount[1] * aRes;                   // - accelBias[1];
     az = (float)accelCount[2] * aRes;                   // - accelBias[2];
-<<<<<<< HEAD
 //    Serial.printf("Ax: %f \n Ay: %f \n Az: %f \n", ax, ay, az);
-=======
 
-    Serial.printf("Ax: %f \n Ay: %f \n Az: %f \n", ax, ay, az);
-
->>>>>>> f36adb3 (MVP v0)
     // ----- Gyro calculations
     readGyroData(gyroCount);                            // Read the gyro registers
     getGres();                                          // Get gyro resolution
