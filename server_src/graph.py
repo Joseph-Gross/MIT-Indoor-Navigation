@@ -8,37 +8,37 @@ import json
 import pprint
 import math
 
-from geopy.distance import geodesic as GD
+from geopy.distance import distance, geodesic
 from queue import PriorityQueue
 
 
 # # use these imports if working locally
-POLYGONS_CSV_FILE_PATH = "data/polygons.csv"
-
-NODES_0_CSV_FILE_PATH = "data/nodes_0.csv"
-NODES_1_CSV_FILE_PATH = "data/nodes_1.csv"
-NODES_STAIRS_CSV_FILE_PATH = "data/nodes_stairs.csv"
-NODES_ELEVATORS_CSV_FILE_PATH = "data/nodes_elevators.csv"
-
-EDGES_0_CSV_FILE_PATH = "data/edges_0.csv"
-EDGES_1_CSV_FILE_PATH = "data/edges_1.csv"
-
-GRAPH_JSON_FILE_PATH = "data/graph.json"
-APSP_JSON_FILE_PATH = "data/apsp.json"
+# POLYGONS_CSV_FILE_PATH = "data/polygons.csv"
+#
+# NODES_0_CSV_FILE_PATH = "data/nodes_0.csv"
+# NODES_1_CSV_FILE_PATH = "data/nodes_1.csv"
+# NODES_STAIRS_CSV_FILE_PATH = "data/nodes_stairs.csv"
+# NODES_ELEVATORS_CSV_FILE_PATH = "data/nodes_elevators.csv"
+#
+# EDGES_0_CSV_FILE_PATH = "data/edges_0.csv"
+# EDGES_1_CSV_FILE_PATH = "data/edges_1.csv"
+#
+# GRAPH_JSON_FILE_PATH = "data/graph.json"
+# APSP_JSON_FILE_PATH = "data/apsp.json"
 
 # these imports are used server side
-# POLYGONS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/polygons.csv"
+POLYGONS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/polygons.csv"
 
-# NODES_0_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_0.csv"
-# NODES_1_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_1.csv"
-# NODES_STAIRS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_stairs.csv"
-# NODES_ELEVATORS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_elevators.csv"
+NODES_0_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_0.csv"
+NODES_1_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_1.csv"
+NODES_STAIRS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_stairs.csv"
+NODES_ELEVATORS_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/nodes_elevators.csv"
 
-# EDGES_0_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/edges_0.csv"
-# EDGES_1_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/edges_1.csv"
+EDGES_0_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/edges_0.csv"
+EDGES_1_CSV_FILE_PATH = "/var/jail/home/team8/server_src/data/edges_1.csv"
 
-# GRAPH_JSON_FILE_PATH = "/var/jail/home/team8/server_src/data/graph.json"
-# APSP_JSON_FILE_PATH = "/var/jail/home/team8/server_src/data/apsp.json"
+GRAPH_JSON_FILE_PATH = "/var/jail/home/team8/server_src/data/graph.json"
+APSP_JSON_FILE_PATH = "/var/jail/home/team8/server_src/data/apsp.json"
 
 
 @unique
@@ -83,20 +83,8 @@ class Edge:
     direction: Optional[float] = field(init=False)
 
     def __post_init__(self):
-        self.weight = self._calculate_distance()
-        self.direction = self._calculate_direction()
-
-    def _calculate_distance(self) -> GD.meters:
-        return GD(self.v1.location.values, self.v2.location.values).meters
-
-    def _calculate_direction(self) -> Optional[float]:
-        point_1 = self.v1.location
-        point_2 = self.v2.location
-
-        delta_y = point_2.lat - point_1.lat
-        delta_x = point_2.lon - point_1.lon
-
-        return math.atan(delta_y) / delta_x if delta_x != 0 else None
+        self.weight = calculate_distance(self.v1.location, self.v2.location)
+        self.direction = calculate_direction(self.v1.location, self.v2.location)
 
 
 class Graph:
@@ -490,7 +478,6 @@ def parse_polygons(polygons_csv_file_path: str) -> Dict[str, Polygon]:
             vertices = []
             for vertex_str in raw_vertices:
                 lon, lat = vertex_str.split()
-                #print(lat,lon)
                 vertex = Location(lat=float(lat), lon=float(lon))
                 vertices.append(vertex)
 
@@ -517,9 +504,7 @@ def parse_nodes(nodes_csv_file_path: str, polygons: Dict[str, Polygon], floor: O
 
             raw_location_str, node_name, _ = row
             location_str = raw_location_str[7: -1]
-            #think this was switched
             lon, lat = location_str.split()
-            #print(lat,lon)
             location = Location(lat=float(lat), lon=float(lon))
 
             building = None
@@ -559,7 +544,6 @@ def parse_edges(edges_csv_file_path: str, nodes: List[Node]) -> List[Tuple[str, 
             raw_points = line_str.split(",")
 
             for i in range(len(raw_points)-1):
-                #also switched here
                 lon_1, lat_1 = [float(val) for val in raw_points[i].split()]
                 lon_2, lat_2 = [float(val) for val in raw_points[i+1].split()]
                 node_1_id = locations_to_node_ids[(lat_1, lon_1)]
@@ -705,6 +689,17 @@ def calculate_eta(distance: float, avg_velocity: float = 1.34112):
     """
 
     return round(distance / avg_velocity, 2)
+
+
+def calculate_distance(point_1: Location, point_2: Location) -> distance.meters:
+    return geodesic(point_1.values, point_2.values).meters
+
+
+def calculate_direction(point_1: Location, point_2: Location) -> Optional[float]:
+    delta_y = point_2.lat - point_1.lat
+    delta_x = point_2.lon - point_1.lon
+
+    return math.atan(delta_y) / delta_x if delta_x != 0 else None
 
 
 if __name__ == "__main__":

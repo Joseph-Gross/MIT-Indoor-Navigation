@@ -1,13 +1,15 @@
 import unittest
 import csv
 
-#from server_src import graph as graph_utils
+# from server_src import graph as graph_utils
 import graph as graph_utils
-#from server_src.graph import POLYGONS_CSV_FILE_PATH, NODES_1_CSV_FILE_PATH, EDGES_1_CSV_FILE_PATH, GRAPH_JSON_FILE_PATH, \
- #   APSP_JSON_FILE_PATH
+# from server_src.graph import POLYGONS_CSV_FILE_PATH, NODES_1_CSV_FILE_PATH, EDGES_1_CSV_FILE_PATH, GRAPH_JSON_FILE_PATH, \
+#    APSP_JSON_FILE_PATH
 from graph import POLYGONS_CSV_FILE_PATH, NODES_1_CSV_FILE_PATH, EDGES_1_CSV_FILE_PATH, GRAPH_JSON_FILE_PATH, \
     APSP_JSON_FILE_PATH
 from geopy.distance import geodesic as GD
+
+
 class PolygonTests(unittest.TestCase):
     def setUp(self):
         self.polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
@@ -25,6 +27,7 @@ class PolygonTests(unittest.TestCase):
         for building in self.polygons.keys():
             self.assertTrue(building in expected_buildings, f"{building} not expected")
             #this said building= changed it to just building hope that is ok
+
     def test_polygon_parser_1(self):
         """
         Tests building 10's polygon is parsed as expected and converted to polygon object
@@ -55,12 +58,12 @@ class NodeTests(unittest.TestCase):
         unique_node_ids = set([node.id for node in self.nodes])
         self.assertEqual(len(unique_node_ids), len(self.nodes))
         
-    # def test_nodes_parse_without_polygons(self):
-    #     nodes_csv = open(NODES_1_CSV_FILE_PATH)
-    #     csv_reader = csv.reader(nodes_csv)
-    #     expected_num_nodes = len(list(csv_reader)) - 1
+    def test_nodes_parse_without_polygons(self):
+        nodes_csv = open(NODES_1_CSV_FILE_PATH)
+        csv_reader = csv.reader(nodes_csv)
+        expected_num_nodes = len(list(csv_reader)) - 1
 
-    #     self.assertEqual(expected_num_nodes, len(self.nodes))
+        self.assertEqual(expected_num_nodes, len(self.nodes))
     
     def test_nodes_parse_with_polygons(self):
         polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
@@ -108,6 +111,7 @@ class GraphTests(unittest.TestCase):
 
         self.assertEqual(self.graph.apsp(), graph.apsp_cache)
 
+
 class ClosestNodeTests(unittest.TestCase):
     def setUp(self):
         self.polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
@@ -120,6 +124,7 @@ class ClosestNodeTests(unittest.TestCase):
         for node in self.nodes:
             current_loc = node.location
             self.assertEqual(self.graph.get_closest_node(current_loc),node.id)
+
     def test_closest_node_2(self):
         #test when you are in building 1 but not on a node
         loc_from_google = graph_utils.Location(lat=42.3579114810823, lon=-71.09195835623672)
@@ -137,6 +142,8 @@ class ClosestNodeTests(unittest.TestCase):
         #print(loc_from_google.values)
         #print("Between current location and 1.1.1.b:"+str(distance.distance(loc_from_google.values,node_1.location.values)))
         self.assertEqual(self.graph.get_closest_node(loc_from_google),"1.1.1.b")
+
+
 class CurrentBuildingTests(unittest.TestCase):
     def setUp(self):
         self.polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
@@ -182,12 +189,15 @@ class CurrentBuildingTests(unittest.TestCase):
     def test_current_unmapped_building(self):
         unmapped_point = graph_utils.Location(lat=42.3588101176443, lon=-71.08914198461318)
         self.assertEqual(graph_utils.get_current_building(self.polygons,unmapped_point),None)
+
+
 class DijkstraTests(unittest.TestCase):
     def setUp(self):
         polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
         nodes = graph_utils.parse_nodes(NODES_1_CSV_FILE_PATH, polygons, 1)
         edges = graph_utils.parse_edges(EDGES_1_CSV_FILE_PATH, nodes)
         self.graph = graph_utils.create_graph(nodes, edges, num_floors=2)
+
     def test_shortest_path_0(self):
         src = "8.1.2.b"
         dest = "4.1.1.b"
@@ -274,5 +284,4 @@ class DijkstraTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    #unittest.main()
     res = unittest.main(verbosity=3, exit=False)
