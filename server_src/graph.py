@@ -490,7 +490,6 @@ def parse_polygons(polygons_csv_file_path: str) -> Dict[str, Polygon]:
             vertices = []
             for vertex_str in raw_vertices:
                 lon, lat = vertex_str.split()
-                #print(lat,lon)
                 vertex = Location(lat=float(lat), lon=float(lon))
                 vertices.append(vertex)
 
@@ -517,9 +516,7 @@ def parse_nodes(nodes_csv_file_path: str, polygons: Dict[str, Polygon], floor: O
 
             raw_location_str, node_name, _ = row
             location_str = raw_location_str[7: -1]
-            #think this was switched
             lon, lat = location_str.split()
-            #print(lat,lon)
             location = Location(lat=float(lat), lon=float(lon))
 
             building = None
@@ -559,7 +556,6 @@ def parse_edges(edges_csv_file_path: str, nodes: List[Node]) -> List[Tuple[str, 
             raw_points = line_str.split(",")
 
             for i in range(len(raw_points)-1):
-                #also switched here
                 lon_1, lat_1 = [float(val) for val in raw_points[i].split()]
                 lon_2, lat_2 = [float(val) for val in raw_points[i+1].split()]
                 node_1_id = locations_to_node_ids[(lat_1, lon_1)]
@@ -705,6 +701,17 @@ def calculate_eta(distance: float, avg_velocity: float = 1.34112):
     """
 
     return round(distance / avg_velocity, 2)
+
+
+def calculate_distance(point_1: Location, point_2: Location) -> distance.distance.meters:
+    return distance.distance(point_1.values, point_2.values).meters
+
+
+def calculate_direction(point_1: Location, point_2: Location) -> Optional[float]:
+    delta_y = point_2.lat - point_1.lat
+    delta_x = point_2.lon - point_1.lon
+
+    return math.atan(delta_y) / delta_x if delta_x != 0 else None
 
 
 if __name__ == "__main__":

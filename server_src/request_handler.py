@@ -77,9 +77,8 @@ def request_handler(request):
     next_node = graph.get_node(route.path[1])
     dest_node = graph.get_node(route.destination)
 
-    curr_edge = graph.get_edge(curr_node.id, next_node.id)
-    dist_next_node = curr_edge.weight
-    dir_next_node = curr_edge.direction
+    dist_next_node = graph_utils.calculate_distance(request_values.point, next_node.location)
+    dir_next_node = graph_utils.calculate_direction()
     eta = graph_utils.calculate_eta(route.distance)
 
     response = Response(curr_building=curr_node.building, next_building=next_node.building,
@@ -89,7 +88,4 @@ def request_handler(request):
 
     response_dict = asdict(response)
     response_dict["has_arrived"] = int(response.has_arrived)
-
     return json.dumps(response_dict)
-
-# TODO: Refactor so that building input can be one or two digits (check if numeric, convert to number, then convert to two digit string)
