@@ -40,11 +40,21 @@ const char ApiClient::CA_CERT[] = "-----BEGIN CERTIFICATE-----\n"
 
 char ApiClient::network[] = "MIT GUEST";
 char ApiClient::password[] = "";
+//char ApiClient::network[] = "Adam ipad";
+//char ApiClient::password[] = "adamsnowdon";
+
+//char ApiClient::network[] = "iPhone";
+//char ApiClient::password[] = "okokokok";
 
 uint8_t ApiClient::scanning = 1 ;//set to 1 if you'd like to scan for wifi networks (see below):
-uint8_t ApiClient::channel = 1;                                 // network channel on 2.4 GHz
-// 5C:5B:35:F6:31:34
-byte ApiClient::bssid[] = {0x5C, 0x5B, 0x35, 0xF6, 0x3D, 0xC4}; // 6 byte MAC address of AP you're targeting.
+uint8_t ApiClient::channel = 6;                                 // network channel on 2.4 GHz
+
+//byte ApiClient::bssid[] = {0x12, 0xEE, 0x18, 0xC0, 0x24, 0x51}; // 6 byte MAC address of AP you're targeting. // Adam Ipad
+
+//6A:DE:58:E9:26:23
+byte ApiClient::bssid[] = {0x6A, 0xDE, 0x58, 0xE9, 0x26, 0x23}; // 6 byte MAC address of AP you're targeting. // Kathleen Iphone
+
+//byte ApiClient::bssid[] = {0x5C, 0x5B, 0x35, 0xF6, 0x3D, 0xC4}; // 6 byte MAC address of AP you're targeting.
 
 char ApiClient::request[IN_BUFFER_SIZE];
 char ApiClient::response[OUT_BUFFER_SIZE]; // char array buffer to hold HTTP request
@@ -279,7 +289,20 @@ int ApiClient::wifi_object_builder(char *object_string, uint32_t os_len, uint8_t
 
 StaticJsonDocument<500> ApiClient::fetch_location() {
     Serial.println("Fetching Location");
+
+//    int n = WiFi.scanNetworks();
+//    max_aps = max(min(MAX_APS, n), 1);
+//    for (int i = 0; i < max_aps; ++i)
+//    {                                                                                                                             // for each valid access point
+//        uint8_t *mac = WiFi.BSSID(i);                                                                                             // get the MAC Address
+//        offset += wifi_object_builder(json_body + offset, JSON_BODY_SIZE - offset, WiFi.channel(i), WiFi.RSSI(i), WiFi.BSSID(i)); // generate the query
+//        if (i != max_aps - 1)
+//        {
+//            offset += sprintf(json_body + offset, ","); // add comma between entries except trailing.
+//        }
+//    }
     sprintf(json_body + offset, "%s", GEOLOCATION_REQUEST_SUFFIX);
+
     int len = strlen(json_body);
     request[0] = '\0'; // set 0th byte to null
     offset = 0;        // reset offset variable for sprintf-ing

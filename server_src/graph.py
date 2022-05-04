@@ -282,9 +282,9 @@ class Graph:
         closest_node = None
         for v_id in self.get_nodes_by_floor_and_type(floor, node_type):
             v = self.get_node(v_id)
-            edge = Edge(src, v)
-            if edge.weight < min_dist:
-                min_dist = edge.weight
+            distance = calculate_distance(src.location, v.location)
+            if distance < min_dist:
+                min_dist = distance
                 closest_node = v
 
         return closest_node.id
