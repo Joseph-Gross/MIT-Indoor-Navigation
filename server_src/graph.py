@@ -8,7 +8,7 @@ import json
 import pprint
 import math
 
-from geopy.distance import geodesic as GD
+from geopy.distance import distance, geodesic
 from queue import PriorityQueue
 
 
@@ -83,20 +83,8 @@ class Edge:
     direction: Optional[float] = field(init=False)
 
     def __post_init__(self):
-        self.weight = self._calculate_distance()
-        self.direction = self._calculate_direction()
-
-    def _calculate_distance(self) -> GD.meters:
-        return GD(self.v1.location.values, self.v2.location.values).meters
-
-    def _calculate_direction(self) -> Optional[float]:
-        point_1 = self.v1.location
-        point_2 = self.v2.location
-
-        delta_y = point_2.lat - point_1.lat
-        delta_x = point_2.lon - point_1.lon
-
-        return math.atan(delta_y) / delta_x if delta_x != 0 else None
+        self.weight = calculate_distance(self.v1.location, self.v2.location)
+        self.direction = calculate_direction(self.v1.location, self.v2.location)
 
 
 class Graph:
@@ -703,8 +691,8 @@ def calculate_eta(distance: float, avg_velocity: float = 1.34112):
     return round(distance / avg_velocity, 2)
 
 
-def calculate_distance(point_1: Location, point_2: Location) -> distance.distance.meters:
-    return distance.distance(point_1.values, point_2.values).meters
+def calculate_distance(point_1: Location, point_2: Location) -> distance.meters:
+    return geodesic(point_1.values, point_2.values).meters
 
 
 def calculate_direction(point_1: Location, point_2: Location) -> Optional[float]:

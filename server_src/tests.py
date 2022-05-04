@@ -8,6 +8,7 @@ import graph as graph_utils
 from graph import POLYGONS_CSV_FILE_PATH, NODES_1_CSV_FILE_PATH, EDGES_1_CSV_FILE_PATH, GRAPH_JSON_FILE_PATH, \
     APSP_JSON_FILE_PATH
 from geopy.distance import geodesic as GD
+
 class PolygonTests(unittest.TestCase):
     def setUp(self):
         self.polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
@@ -108,6 +109,7 @@ class GraphTests(unittest.TestCase):
 
         self.assertEqual(self.graph.apsp(), graph.apsp_cache)
 
+
 class ClosestNodeTests(unittest.TestCase):
     def setUp(self):
         self.polygons = graph_utils.parse_polygons(POLYGONS_CSV_FILE_PATH)
@@ -137,6 +139,7 @@ class ClosestNodeTests(unittest.TestCase):
         #print(loc_from_google.values)
         #print("Between current location and 1.1.1.b:"+str(distance.distance(loc_from_google.values,node_1.location.values)))
         self.assertEqual(self.graph.get_closest_node(loc_from_google),"1.1.1.b")
+
 
 class DijkstraTests(unittest.TestCase):
     def setUp(self):
