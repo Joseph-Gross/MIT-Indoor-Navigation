@@ -78,7 +78,7 @@ def request_handler(request):
     dest_node = graph.get_node(route.destination)
 
     dist_next_node = graph_utils.calculate_distance(request_values.point, next_node.location)
-    dir_next_node = graph_utils.calculate_direction()
+    dir_next_node = graph_utils.calculate_direction(request_values.point, next_node.location)
     eta = graph_utils.calculate_eta(route.distance)
 
     response = Response(curr_building=curr_node.building, next_building=next_node.building,

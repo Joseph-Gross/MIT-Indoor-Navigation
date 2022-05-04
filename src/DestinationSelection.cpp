@@ -66,7 +66,7 @@ void DestinationSelection::display_selection(){
     }
 
     if (state == BUILDING_SELECTION | state == FLOOR_SELECTION) {
-      tft->printf("Selecting: %s\n", scroll_char);
+      tft->printf("Selecting: %s\n\n", scroll_char);
       tft->println("Short Press: confirm");
       tft->println("Long Press: clear\n\n"); 
     }
