@@ -72,12 +72,12 @@ void Compass::update_display(float dir_next_node){
   color.r = 0;
   color.b = 255;
   // angle -= pi/2.0; // to make it point North // THIS WILL ACCEPT AN ANGLE OFFSET FROM EAST
-  float angle_rad = 0.0174532925*device_angle; // angle already in radians!
-  device_angle = angle_rad - dir_next_node;
+  float cardinal_angle = device_angle - 90; // this is the angle in degrees offset from North
+  float display_angle = 0.0174532925*device_angle - dir_next_node; // this is the angle relative to the axis of the breadboard, in radians
   float hl = length/2.0;
   float hw = width/2.0;
-  float s = sin(device_angle);
-  float c = cos(device_angle);
+  float s = sin(display_angle);
+  float c = cos(display_angle);
   p1.x = center.x+c*hl-s*hw;
   p1.y = center.y+s*hl+c*hw;
   p2.x = center.x-c*hl-s*hw;
@@ -95,7 +95,59 @@ void Compass::update_display(float dir_next_node){
   tft->fillTriangle(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y, ST7735_GREEN);
   tft->fillTriangle(p1.x, p1.y, p4.x, p4.y, p3.x, p3.y, ST7735_GREEN);
   tft->fillTriangle(p5.x, p5.y, p6.x, p6.y, p7.x, p7.y, ST7735_GREEN);
-  Serial.printf("Angle: %f", -device_angle/0.0174532925);
+//  Serial.printf("Angle: %f", -device_angle/0.0174532925);
+  char cardinal_direction[10];
+  if (cardinal_angle >= 349 && cardinal_angle < 11){
+    sprintf(cardinal_direction, "N");
+  }
+  else if (cardinal_angle >= 11 && cardinal_angle < 33){
+    sprintf(cardinal_direction, "NNE");
+  }
+  else if (cardinal_angle >= 33 && cardinal_angle < 56){
+    sprintf(cardinal_direction, "NE");
+  }
+  else if (cardinal_angle >= 56 && cardinal_angle < 78){
+    sprintf(cardinal_direction, "ENE");
+  }
+  else if (cardinal_angle >= 78 && cardinal_angle < 101){
+    sprintf(cardinal_direction, "E");
+  }
+  else if (cardinal_angle >= 101 && cardinal_angle < 123){
+    sprintf(cardinal_direction, "ESE");
+  }
+  else if (cardinal_angle >= 123 && cardinal_angle < 146){
+    sprintf(cardinal_direction, "SE");
+  }
+  else if (cardinal_angle >= 146 && cardinal_angle < 168){
+    sprintf(cardinal_direction, "SSE");
+  }
+  else if (cardinal_angle >= 168 && cardinal_angle < 191){
+    sprintf(cardinal_direction, "S");
+  }
+  else if (cardinal_angle >= 191 && cardinal_angle < 213){
+    sprintf(cardinal_direction, "SSW");
+  }
+  else if (cardinal_angle >= 213 && cardinal_angle < 236){
+    sprintf(cardinal_direction, "SW");
+  }
+  else if (cardinal_angle >= 236 && cardinal_angle < 258){
+    sprintf(cardinal_direction, "WSW");
+  }
+  else if (cardinal_angle >= 258 && cardinal_angle < 281){
+    sprintf(cardinal_direction, "W");
+  }
+  else if (cardinal_angle >= 281 && cardinal_angle < 303){
+    sprintf(cardinal_direction, "WNW");
+  }
+  else if (cardinal_angle >= 303 && cardinal_angle < 326){
+    sprintf(cardinal_direction, "NW");
+  }
+  else if (cardinal_angle >= 326 && cardinal_angle < 349){
+    sprintf(cardinal_direction, "NNW");
+  }
+  tft->println(cardinal_direction); // might need a setcursor
+  tft->println(cardinal_angle); // might need a setcursor
+  Serial.printf("Cardinal Direction: %f\n", cardinal_direction); // might need a setcursor
 }
 
 
