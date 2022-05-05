@@ -17,6 +17,11 @@ void Navigation::fetch_current_location() {
     float latitude = doc["location"]["lat"];
     float longitude = doc["location"]["lng"];
 
+    if (latitude == 0 | longitude == 0) {
+        Serial.println("Invalid Lat/Lon");
+        return;
+    }
+
     location.latitude=latitude;
     location.longitude=longitude;
 }
@@ -36,18 +41,18 @@ void Navigation::fetch_navigation_instructions() {
     const char* dest_node = doc["dest_node"];
     const char* dest_building = doc["dest_building"];
 
-    sprintf(navigation_instructions.curr_building, curr_building);
-    sprintf(navigation_instructions.next_building, next_building);
-    sprintf(navigation_instructions.curr_node, curr_node);
-    sprintf(navigation_instructions.next_building, next_building);
+    sprintf(navigation_instructions.curr_building, "%s", curr_building);
+    sprintf(navigation_instructions.next_building, "%s", next_building);
+    sprintf(navigation_instructions.curr_node, "%s", curr_node);
+    sprintf(navigation_instructions.next_node, "%s", next_node);
 
     navigation_instructions.dist_next_node=dist_next_node;
     navigation_instructions.dir_next_node=dir_next_node;
     navigation_instructions.has_arrived=has_arrived;
     navigation_instructions.eta=eta;
 
-    sprintf(navigation_instructions.dest_node, dest_node);
-    sprintf(navigation_instructions.dest_building, dest_building);
+    sprintf(navigation_instructions.dest_node, "%s", dest_node);
+    sprintf(navigation_instructions.dest_building, "%s", dest_building);
 }
 
 void Navigation::begin_navigation(uint8_t _current_floor, char* _destination, uint8_t _destination_floor) {
@@ -125,7 +130,7 @@ void Navigation::display_navigation_instructions() {
     sprintf(curr_node_str, "Current: %s", navigation_instructions.curr_node);
     sprintf(next_node_str, "Next: %s", navigation_instructions.next_node);
     sprintf(dist_str, "Distance: %f", navigation_instructions.dist_next_node);
-    sprintf(dir_str, "Direction: %d", (int) (57.2958 * navigation_instructions.dir_next_node));
+    sprintf(dir_str, "Direction: %f", navigation_instructions.dir_next_node);
     sprintf(dest_node_str, "Destination: %s", navigation_instructions.dest_node);
     sprintf(eta_str, "ETA: %d seconds", (int) navigation_instructions.eta);
 

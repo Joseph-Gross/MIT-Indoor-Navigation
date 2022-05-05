@@ -17,7 +17,7 @@ Button button(BUTTON_PIN);
 // Define global variables
 TFT_eSPI tft = TFT_eSPI();
 ApiClient apiClient;
-Compass compass(&tft, 80);
+Compass compass(&tft, 100);
 Navigation navigator(&apiClient, &compass, &tft);
 DestinationSelection destination_selection(&tft, &compass);
 
@@ -92,7 +92,9 @@ void global_update(int button_flag){
           state = ARRIVED;
           navigator.end_navigation();
           tft.fillScreen(BACKGROUND);
-          tft.println("You have arrived! Press button to return to start. \n");
+          tft.setCursor(0, 0, 10);
+          tft.println("You have arrived! \n");
+          tft.println("Press button to restart");
       }
       else if (button_flag == 2) {
           Serial.println("NAVIGATING -> CONFIRM_CANCEL");

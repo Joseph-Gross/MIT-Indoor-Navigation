@@ -9,7 +9,7 @@
 #include <TFT_eSPI.h>
 
 const uint8_t MAX_BUILDING_NAME_LENGTH = 10;
-const uint8_t MAX_NODE_ID_LENGTH = 7;
+const uint8_t MAX_NODE_ID_LENGTH = 10;
 enum class NavigationState {IDLE, LOCATING, ROUTING, NAVIGATING};
 
 struct Location {

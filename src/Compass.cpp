@@ -72,8 +72,8 @@ void Compass::update_display(float dir_next_node){
   color.r = 0;
   color.b = 255;
   // angle -= pi/2.0; // to make it point North // THIS WILL ACCEPT AN ANGLE OFFSET FROM EAST
-  float cardinal_angle = device_angle - 90; // this is the angle in degrees offset from North
-  float display_angle = 0.0174532925*device_angle - dir_next_node; // this is the angle relative to the axis of the breadboard, in radians
+  float cardinal_angle = device_angle; // this is the angle in degrees offset from North
+  float display_angle = 0.0174532925*(device_angle - dir_next_node); // this is the angle relative to the axis of the breadboard, in radians
   float hl = length/2.0;
   float hw = width/2.0;
   float s = sin(display_angle);
@@ -96,7 +96,7 @@ void Compass::update_display(float dir_next_node){
   tft->fillTriangle(p1.x, p1.y, p4.x, p4.y, p3.x, p3.y, ST7735_GREEN);
   tft->fillTriangle(p5.x, p5.y, p6.x, p6.y, p7.x, p7.y, ST7735_GREEN);
 //  Serial.printf("Angle: %f", -device_angle/0.0174532925);
-  char cardinal_direction[10];
+  char cardinal_direction[10] = "N/A";
   if (cardinal_angle >= 349 && cardinal_angle < 11){
     sprintf(cardinal_direction, "N");
   }
@@ -145,9 +145,11 @@ void Compass::update_display(float dir_next_node){
   else if (cardinal_angle >= 326 && cardinal_angle < 349){
     sprintf(cardinal_direction, "NNW");
   }
-  tft->println(cardinal_direction); // might need a setcursor
-  tft->println(cardinal_angle); // might need a setcursor
-  Serial.printf("Cardinal Direction: %f\n", cardinal_direction); // might need a setcursor
+
+  cardinal_direction[3]='\0';
+//  tft->println(cardinal_direction); // might need a setcursor
+//  tft->println(cardinal_angle); // might need a setcursor
+//  Serial.printf("Cardinal Direction: %f\n", cardinal_direction); // might need a setcursor
 }
 
 

@@ -79,7 +79,7 @@ def request_handler(request):
     next_node = graph.get_node(route.path[1]) if len(route.path) > 1 else curr_node
     dest_node = graph.get_node(route.destination)
 
-    dist_next_node = graph_utils.calculate_distance(request_values.point, next_node.location)
+    dist_next_node = graph_utils.calculate_distance(curr_node.location, next_node.location)
     dir_next_node = graph_utils.calculate_direction(curr_node.location, next_node.location)
     eta = graph_utils.calculate_eta(route.distance)
 
