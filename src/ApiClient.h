@@ -50,8 +50,8 @@ public:
     void do_https_request(char *host, char *request, char *response, uint16_t response_size, uint16_t response_timeout, uint8_t serial);
     int wifi_object_builder(char *object_string, uint32_t os_len, uint8_t channel, int signal_strength, uint8_t *mac_address);
     StaticJsonDocument<500> fetch_location();
-    StaticJsonDocument<500> fetch_navigation_instructions(char* user_id, float lat, float lon, uint8_t current_floor,
-                                                          char* destination, uint8_t destination_floor);
+    StaticJsonDocument<500> fetch_navigation_instructions(char* user_id, double lat, double lon, int current_floor,
+                                                          char* destination, int destination_floor);
 };
 
 

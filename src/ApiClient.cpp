@@ -5,7 +5,7 @@
 
 ApiClient::ApiClient() {}
 
-const uint16_t ApiClient::RESPONSE_TIMEOUT = 6000;
+const uint16_t ApiClient::RESPONSE_TIMEOUT = 10000;
 char ApiClient::GOOGLE_SERVER[] = "googleapis.com";
 char ApiClient::TEAM_SERVER[] = "608dev-2.net";
 
@@ -14,7 +14,7 @@ const char ApiClient::GEOLOCATION_REQUEST_PREFIX[] = "{\"wifiAccessPoints\": [";
 const char ApiClient::GEOLOCATION_REQUEST_SUFFIX[] = "]}";                                      // suffix to POST request
 const char ApiClient::GEOLOCATION_API_KEY[] = "AIzaSyAQ9SzqkHhV-Gjv-71LohsypXUH447GWX8";
 
-const int ApiClient::MAX_APS = 5;
+const int ApiClient::MAX_APS = 10;
 
 const char ApiClient::CA_CERT[] = "-----BEGIN CERTIFICATE-----\n"
         "MIIDdTCCAl2gAwIBAgILBAAAAAABFUtaw5QwDQYJKoZIhvcNAQEFBQAwVzELMAkG\n"
@@ -38,7 +38,7 @@ const char ApiClient::CA_CERT[] = "-----BEGIN CERTIFICATE-----\n"
         "HMUfpIBvFSDJ3gyICh3WZlXi/EjJKSZp4A==\n"
         "-----END CERTIFICATE-----\n";
 
-char ApiClient::network[] = "MIT GUEST";
+char ApiClient::network[] = "MIT";
 char ApiClient::password[] = "";
 //char ApiClient::network[] = "Adam ipad";
 //char ApiClient::password[] = "adamsnowdon";
@@ -330,33 +330,34 @@ StaticJsonDocument<500> ApiClient::fetch_location() {
     DeserializationError error = deserializeJson(doc, json);
 
     if (error) {
-        Serial.print("deserializeJson() failed: ");
+        Serial.print("fetch_location() - deserializeJson() failed: ");
         Serial.println(error.c_str());
     }
     return doc;
 }
 
-StaticJsonDocument<500> ApiClient::fetch_navigation_instructions(char* user_id, float lat, float lon,
-                                                                 uint8_t current_floor, char* destination,
-                                                                 uint8_t destination_floor) {
+StaticJsonDocument<500> ApiClient::fetch_navigation_instructions(char* user_id, double lat, double lon,
+                                                                 int current_floor, char* destination,
+                                                                 int destination_floor) {
     Serial.println("Fetching Navigation Instructions");
-    sprintf(request, "GET https://608dev-2.net/sandbox/sc/team8/server_src/request_handler.py?"
-                     "user_id=%s&"
-                     "lat=%f&"
-                     "lon=%f&"
-                     "current_floor=%d&"
-                     "destination=%s&"
-                     "destination_floor=%d  "
-                     "HTTP/1.1\r\n", user_id, lat, lon, current_floor, destination, destination_floor);
+
+    offset = 0;
+    offset += sprintf(request + offset, "GET https://608dev-2.net/sandbox/sc/team8/server_src/request_handler.py?");
+    offset += sprintf(request + offset, "user_id=%s&", user_id);
+    offset += sprintf(request + offset, "lat=%f&lon=%f&", lat, lon);
+    offset += sprintf(request + offset, "current_floor=%d&", current_floor);
+    offset += sprintf(request + offset, "destination=%s&", destination);
+    offset += sprintf(request + offset, "destination_floor=%d  HTTP/1.1\r\n", destination_floor);
     strcat(request, "Host: 608dev-2.net\r\n");
     strcat(request, "\r\n");
+
     do_http_request(TEAM_SERVER, request, response, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
 
     // Parsing response
     StaticJsonDocument<500> doc;
     DeserializationError error = deserializeJson(doc, response);
     if (error) {
-        Serial.print("deserializeJson() failed: ");
+        Serial.print("fetch_client_navigation() - deserializeJson() failed: ");
         Serial.println(error.c_str());
     }
     return doc;

@@ -72,7 +72,7 @@ void Compass::update_display(float dir_next_node){
   color.r = 0;
   color.b = 255;
   // angle -= pi/2.0; // to make it point North // THIS WILL ACCEPT AN ANGLE OFFSET FROM EAST
-  float cardinal_angle = device_angle; // this is the angle in degrees offset from North
+  float cardinal_angle = device_angle - 90; // this is the angle in degrees offset from North
   float display_angle = 0.0174532925*(device_angle - dir_next_node); // this is the angle relative to the axis of the breadboard, in radians
   float hl = length/2.0;
   float hw = width/2.0;

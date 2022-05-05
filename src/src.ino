@@ -92,7 +92,7 @@ void global_update(int button_flag){
           state = ARRIVED;
           navigator.end_navigation();
           tft.fillScreen(BACKGROUND);
-          tft.setCursor(0, 0, 10);
+          tft.setCursor(0, 0, 1);
           tft.println("You have arrived! \n");
           tft.println("Press button to restart");
       }

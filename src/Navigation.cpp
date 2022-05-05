@@ -8,14 +8,14 @@ Navigation::Navigation(ApiClient* client, Compass* _compass, TFT_eSPI* _tft){
     tft = _tft;
 }
 
-const uint16_t Navigation::NAVIGATION_UPDATE_LOOP_DURATION = 10000;
+const uint16_t Navigation::NAVIGATION_UPDATE_LOOP_DURATION = 5000;
 char Navigation::USER_ID[] = "Team8";
 
 void Navigation::fetch_current_location() {
     StaticJsonDocument<500> doc = apiClient->fetch_location();
 
-    float latitude = doc["location"]["lat"];
-    float longitude = doc["location"]["lng"];
+    double latitude = doc["location"]["lat"];
+    double longitude = doc["location"]["lng"];
 
     if (latitude == 0 | longitude == 0) {
         Serial.println("Invalid Lat/Lon");
@@ -34,10 +34,10 @@ void Navigation::fetch_navigation_instructions() {
     const char* next_building = doc["next_building"];
     const char* curr_node = doc["curr_node"];
     const char* next_node = doc["next_node"];
-    float dist_next_node = doc["dist_next_node"];
-    float dir_next_node = doc["dir_next_node"];
+    double dist_next_node = doc["dist_next_node"];
+    double dir_next_node = doc["dir_next_node"];
     bool has_arrived = doc["has_arrived"];
-    float eta = doc["eta"];
+    double eta = doc["eta"];
     const char* dest_node = doc["dest_node"];
     const char* dest_building = doc["dest_building"];
 
@@ -55,7 +55,7 @@ void Navigation::fetch_navigation_instructions() {
     sprintf(navigation_instructions.dest_building, "%s", dest_building);
 }
 
-void Navigation::begin_navigation(uint8_t _current_floor, char* _destination, uint8_t _destination_floor) {
+void Navigation::begin_navigation(int _current_floor, char* _destination, int _destination_floor) {
     Serial.println("Starting Navigation");
     current_floor = _current_floor;
     strcpy(destination, _destination);
@@ -88,10 +88,12 @@ int Navigation::navigate() {
             break;
 
         case NavigationState::ROUTING:
+            delay(1000);
             fetch_navigation_instructions();
             state = NavigationState::NAVIGATING;
             navigation_update_timer = millis();
             Serial.println("ROUTING -> NAVIGATING");
+            delay(1000);
 
             if (navigation_instructions.has_arrived) flag = 1;
             display_navigation_instructions();

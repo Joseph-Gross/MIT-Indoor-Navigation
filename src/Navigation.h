@@ -13,8 +13,8 @@ const uint8_t MAX_NODE_ID_LENGTH = 10;
 enum class NavigationState {IDLE, LOCATING, ROUTING, NAVIGATING};
 
 struct Location {
-    float latitude;
-    float longitude;
+    double latitude;
+    double longitude;
 };
 
 struct NavigationInstructions {
@@ -22,10 +22,10 @@ struct NavigationInstructions {
     char next_building[MAX_BUILDING_NAME_LENGTH];
     char curr_node[MAX_NODE_ID_LENGTH];
     char next_node[MAX_NODE_ID_LENGTH];
-    float dist_next_node;
-    float dir_next_node;
+    double dist_next_node;
+    double dir_next_node;
     bool has_arrived;
-    float eta;
+    double eta;
     char dest_node[MAX_NODE_ID_LENGTH];
     char dest_building[MAX_NODE_ID_LENGTH];
 };
@@ -57,7 +57,7 @@ public:
     Navigation(ApiClient* client, Compass* _compass, TFT_eSPI* _tft);
     void fetch_current_location();
     void fetch_navigation_instructions();
-    void begin_navigation(uint8_t _current_floor, char* _destination, uint8_t _destination_floor);
+    void begin_navigation(int _current_floor, char* _destination, int _destination_floor);
     void end_navigation();
     int navigate();
 };
