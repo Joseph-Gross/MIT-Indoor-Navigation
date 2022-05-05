@@ -290,17 +290,19 @@ int ApiClient::wifi_object_builder(char *object_string, uint32_t os_len, uint8_t
 StaticJsonDocument<500> ApiClient::fetch_location() {
     Serial.println("Fetching Location");
 
-//    int n = WiFi.scanNetworks();
-//    max_aps = max(min(MAX_APS, n), 1);
-//    for (int i = 0; i < max_aps; ++i)
-//    {                                                                                                                             // for each valid access point
-//        uint8_t *mac = WiFi.BSSID(i);                                                                                             // get the MAC Address
-//        offset += wifi_object_builder(json_body + offset, JSON_BODY_SIZE - offset, WiFi.channel(i), WiFi.RSSI(i), WiFi.BSSID(i)); // generate the query
-//        if (i != max_aps - 1)
-//        {
-//            offset += sprintf(json_body + offset, ","); // add comma between entries except trailing.
-//        }
-//    }
+    memset(json_body, 0, strlen(json_body));
+    offset = sprintf(json_body, "%s", GEOLOCATION_REQUEST_PREFIX);
+    int n = WiFi.scanNetworks();
+    max_aps = max(min(MAX_APS, n), 1);
+    for (int i = 0; i < max_aps; ++i)
+    {                                                                                                                             // for each valid access point
+        uint8_t *mac = WiFi.BSSID(i);                                                                                             // get the MAC Address
+        offset += wifi_object_builder(json_body + offset, JSON_BODY_SIZE - offset, WiFi.channel(i), WiFi.RSSI(i), WiFi.BSSID(i)); // generate the query
+        if (i != max_aps - 1)
+        {
+            offset += sprintf(json_body + offset, ","); // add comma between entries except trailing.
+        }
+    }
     sprintf(json_body + offset, "%s", GEOLOCATION_REQUEST_SUFFIX);
 
     int len = strlen(json_body);

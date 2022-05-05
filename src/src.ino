@@ -137,11 +137,12 @@ void setup() {
     tft.setTextColor(TFT_GREEN, TFT_BLACK); // set color of font to hot pink foreground, black background
     tft.println("Tiny Tim booting... \nplease wait\n\n");
 
-    tft.println("Initializing Wifi...");
+    tft.println("Initializing... \n");
     apiClient.initialize_wifi_connection();
-    
-    tft.println("Initializing Compass...");
+    tft.println("Wifi connected!\n");
+
     compass.initialize();
+    tft.println("Compass calibrated!");
     
     display_start_message();
 }

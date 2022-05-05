@@ -2,23 +2,23 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
-const uint16_t LOOP_THRESHOLD = 20000;
+const uint16_t LOOP_THRESHOLD = 10000;
 uint32_t timer;
 ApiClient apiClient;
 
 char USER_ID[] = "team8";
-float latitude = -71.0926422;
-float longitude = 42.3582736;
+float latitude;
+float longitude;
 int current_floor = 1;
-char destination[] = "3";
+char destination[] = "7";
 int destination_floor = 1;
 
 
 void fetch_current_location() {
     StaticJsonDocument<500> doc = apiClient.fetch_location();
 
-    float latitude = doc["location"]["lat"];
-    float longitude = doc["location"]["lng"];
+    latitude = doc["location"]["lat"];
+    longitude = doc["location"]["lng"];
 
     Serial.printf("Current Location: \n");
     Serial.printf("Latitude: %f \n", latitude);

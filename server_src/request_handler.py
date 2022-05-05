@@ -70,11 +70,13 @@ def request_handler(request):
     curr_node = graph.get_node(graph.get_closest_node(request_values.point, floor=request_values.current_floor))
     curr_building = graph_utils.get_current_building(polygons, request_values.point)
     has_arrived = (curr_building == request_values.destination and
-                   request_values.current_floor == request_values.destination_floor)
+                   request_values.current_floor == request_values.destination_floor) or \
+                  (curr_node.building == request_values.destination and
+                   curr_node.floor == request_values.destination_floor)
 
     route = graph.find_shortest_path(curr_node.id, request_values.destination, request_values.destination_floor)
 
-    next_node = graph.get_node(route.path[1])
+    next_node = graph.get_node(route.path[1]) if len(route.path) > 1 else curr_node
     dest_node = graph.get_node(route.destination)
 
     dist_next_node = graph_utils.calculate_distance(request_values.point, next_node.location)

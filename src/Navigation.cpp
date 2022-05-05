@@ -114,21 +114,28 @@ int Navigation::navigate() {
 }
 
 void Navigation::display_navigation_instructions() {
-    char destination_str[100];
-    char curr_node_str[100];
-    char next_node_str[100];
-    char eta_str[100];
+
+    char curr_node_str[50];
+    char next_node_str[50];
+    char dist_str[50];
+    char dir_str[50];
+    char dest_node_str[50];
+    char eta_str[50];
 
     sprintf(curr_node_str, "Current: %s", navigation_instructions.curr_node);
     sprintf(next_node_str, "Next: %s", navigation_instructions.next_node);
-    sprintf(destination_str, "Destination: %s", navigation_instructions.dest_building);
+    sprintf(dist_str, "Distance: %f", navigation_instructions.dist_next_node);
+    sprintf(dir_str, "Direction: %d", (int) (57.2958 * navigation_instructions.dir_next_node));
+    sprintf(dest_node_str, "Destination: %s", navigation_instructions.dest_node);
     sprintf(eta_str, "ETA: %d seconds", (int) navigation_instructions.eta);
 
 //    tft->fillScreen(TFT_BLACK);
     tft->setCursor(0, 0, 1);
     tft->println(curr_node_str);
     tft->println(next_node_str);
-    tft->println(destination_str);
+    tft->println(dist_str);
+    tft->println(dir_str);
+    tft->println(dest_node_str);
     tft->println(eta_str);
 }
 

@@ -9,7 +9,6 @@ const uint16_t ApiClient::RESPONSE_TIMEOUT = 6000;
 char ApiClient::GOOGLE_SERVER[] = "googleapis.com";
 char ApiClient::TEAM_SERVER[] = "608dev-2.net";
 
-// const char ApiClient::GEOLOCATION_REQUEST_PREFIX[] = "{\"wifiAccessPoints\": [";                // beginning of json body
 const char ApiClient::GEOLOCATION_REQUEST_PREFIX[] = "{\"wifiAccessPoints\": [";
 const char ApiClient::GEOLOCATION_REQUEST_SUFFIX[] = "]}";                                      // suffix to POST request
 const char ApiClient::GEOLOCATION_API_KEY[] = "AIzaSyAQ9SzqkHhV-Gjv-71LohsypXUH447GWX8";
@@ -235,11 +234,11 @@ void ApiClient::do_https_request(char *host, char *request, char *response, uint
         { // read out remaining text (body of response)
             char_append(response, client.read(), response_size);
         }
-//        if (serial)
-//            Serial.println(response);
+        if (serial)
+            Serial.println(response);
         client.stop();
-//        if (serial)
-//            Serial.println("-----------");
+        if (serial)
+            Serial.println("-----------");
     }
     else
     {
@@ -279,7 +278,22 @@ int ApiClient::wifi_object_builder(char *object_string, uint32_t os_len, uint8_t
 
 StaticJsonDocument<500> ApiClient::fetch_location() {
     Serial.println("Fetching Location");
+
+    memset(json_body, 0, strlen(json_body));
+    offset = sprintf(json_body, "%s", GEOLOCATION_REQUEST_PREFIX);
+    int n = WiFi.scanNetworks();
+    max_aps = max(min(MAX_APS, n), 1);
+    for (int i = 0; i < max_aps; ++i)
+    {                                                                                                                             // for each valid access point
+        uint8_t *mac = WiFi.BSSID(i);                                                                                             // get the MAC Address
+        offset += wifi_object_builder(json_body + offset, JSON_BODY_SIZE - offset, WiFi.channel(i), WiFi.RSSI(i), WiFi.BSSID(i)); // generate the query
+        if (i != max_aps - 1)
+        {
+            offset += sprintf(json_body + offset, ","); // add comma between entries except trailing.
+        }
+    }
     sprintf(json_body + offset, "%s", GEOLOCATION_REQUEST_SUFFIX);
+
     int len = strlen(json_body);
     request[0] = '\0'; // set 0th byte to null
     offset = 0;        // reset offset variable for sprintf-ing
@@ -290,6 +304,9 @@ StaticJsonDocument<500> ApiClient::fetch_location() {
     offset += sprintf(request + offset, "Content-Length: %d\r\n\r\n", len);
     offset += sprintf(request + offset, "%s\r\n", json_body);
     do_https_request(GOOGLE_SERVER, request, response, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, false);
+
+    Serial.println(response);
+    Serial.println("--------");
 
     // Parsing response
     char* json_start = strchr(response, '{');
