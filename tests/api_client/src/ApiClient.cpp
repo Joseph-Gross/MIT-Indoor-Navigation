@@ -13,7 +13,7 @@ const char ApiClient::GEOLOCATION_REQUEST_PREFIX[] = "{\"wifiAccessPoints\": [";
 const char ApiClient::GEOLOCATION_REQUEST_SUFFIX[] = "]}";                                      // suffix to POST request
 const char ApiClient::GEOLOCATION_API_KEY[] = "AIzaSyAQ9SzqkHhV-Gjv-71LohsypXUH447GWX8";
 
-const int ApiClient::MAX_APS = 5;
+const int ApiClient::MAX_APS = 8;
 
 const char ApiClient::CA_CERT[] = "-----BEGIN CERTIFICATE-----\n"
         "MIIDdTCCAl2gAwIBAgILBAAAAAABFUtaw5QwDQYJKoZIhvcNAQEFBQAwVzELMAkG\n"
@@ -37,8 +37,8 @@ const char ApiClient::CA_CERT[] = "-----BEGIN CERTIFICATE-----\n"
         "HMUfpIBvFSDJ3gyICh3WZlXi/EjJKSZp4A==\n"
         "-----END CERTIFICATE-----\n";
 
-char ApiClient::network[] = "MIT GUEST";
-char ApiClient::password[] = "";
+char ApiClient::network[] = "Joseph’s Iphone";
+char ApiClient::password[] = "v6332044";
 
 uint8_t ApiClient::scanning = 1 ;//set to 1 if you'd like to scan for wifi networks (see below):
 uint8_t ApiClient::channel = 1;                                 // network channel on 2.4 GHz
@@ -351,4 +351,3 @@ StaticJsonDocument<500> ApiClient::fetch_navigation_instructions(char* user_id, 
     }
     return doc;
 }
-
