@@ -161,7 +161,6 @@ void Compass::calibrate()
   tft->fillScreen(BACKGROUND);
   tft->setCursor(0, 0);
   tft->println("Tumble compass");
-  tft->setCursor(10, 0);
   tft->println("for 30 seconds");
 
   // ----- Calculate magnetometer offsets & scale-factors
@@ -182,17 +181,13 @@ void Compass::calibrate()
   // tft->clear();
   tft->fillScreen(BACKGROUND);
   tft->setCursor(0, 0);
-  tft->println("Record offsets");
-  tft->println("& scale-factors");
-  tft->println("Check serial monitor");
-  //new way:!
-  // the offsets are automatically updated
   Mag_x_offset = magBias[0];
   Mag_y_offset = magBias[1];
   Mag_z_offset = magBias[2];
   Mag_x_scale = magScale[0];
   Mag_y_scale = magScale[1];
   Mag_z_scale = magScale[2];
+  tft->println("Magnetometer offsets uploaded");
   // the offsets are put back into the biases when we call refresh_data
 
   // old way where we get people to change things themselves
