@@ -28,6 +28,7 @@ char destination_floor[2];
 enum global_state
 {
   START,
+  CALIBRATE,
   DESTINATION_SELECTION,
   NAVIGATING,
   CONFIRM_CANCEL,
@@ -46,17 +47,28 @@ void display_start_message()
   tft.setCursor(0, 0, 1);
   tft.println("Welcome to TinyTim, \nMIT's premiere \ncampus navigator\n");
   tft.println("Press the button to \nactivate your guide \nand select a \ndestination.");
+  tft.println("Long press for \ncallibration.");
 }
 
 void global_update(int button_flag){
   switch (state){
     case START:
-      if (button_flag != 0) {
+      if (button_flag == 1) {
           state = DESTINATION_SELECTION;
           destination_selection.begin_selection();
           Serial.println("START -> DESTINATION_SELECTION");
       }
+      else if (button_flag == 2){
+        state = CALIBRATE;
+      }
       break;
+    case CALIBRATE:
+      tft.println("Calibrating compass, follow instructions");
+      compass.calibrate();
+      state = DESTINATION_SELECTION;
+      destination_selection.begin_selection();
+      Serial.println("START -> DESTINATION_SELECTION");
+    break;
     case DESTINATION_SELECTION:
       /* 
       Here we choose the building and room we want to travel to. 
@@ -92,9 +104,7 @@ void global_update(int button_flag){
           state = ARRIVED;
           navigator.end_navigation();
           tft.fillScreen(BACKGROUND);
-          tft.setCursor(0, 0, 10);
-          tft.println("You have arrived! \n");
-          tft.println("Press button to restart");
+          tft.println("You have arrived! Press button to return to start. \n");
       }
       else if (button_flag == 2) {
           Serial.println("NAVIGATING -> CONFIRM_CANCEL");
@@ -109,7 +119,10 @@ void global_update(int button_flag){
       canceling the navigation and we move to Start state, 
       or a long press cancels the navigation cancel.
       */
-      if (button_flag == 1) state = START;
+      if (button_flag == 1) {
+        state = START;
+        display_start_message();
+      }
       if (button_flag == 2) state = NAVIGATING;
       break;
     case ARRIVED:
@@ -139,12 +152,11 @@ void setup() {
     tft.setTextColor(TFT_GREEN, TFT_BLACK); // set color of font to hot pink foreground, black background
     tft.println("Tiny Tim booting... \nplease wait\n\n");
 
-    tft.println("Initializing... \n");
+    tft.println("Initializing Wifi...");
     apiClient.initialize_wifi_connection();
-    tft.println("Wifi connected!\n");
-
+    
+    tft.println("Initializing Compass...");
     compass.initialize();
-    tft.println("Compass calibrated!");
     
     display_start_message();
 }
