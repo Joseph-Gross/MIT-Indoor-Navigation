@@ -14,7 +14,7 @@ const char ApiClient::GEOLOCATION_REQUEST_PREFIX[] = "{\"wifiAccessPoints\": [";
 const char ApiClient::GEOLOCATION_REQUEST_SUFFIX[] = "]}";                                      // suffix to POST request
 const char ApiClient::GEOLOCATION_API_KEY[] = "AIzaSyAQ9SzqkHhV-Gjv-71LohsypXUH447GWX8";
 
-const int ApiClient::MAX_APS = 10;
+const int ApiClient::MAX_APS = 8;
 
 const char ApiClient::CA_CERT[] = "-----BEGIN CERTIFICATE-----\n"
         "MIIDdTCCAl2gAwIBAgILBAAAAAABFUtaw5QwDQYJKoZIhvcNAQEFBQAwVzELMAkG\n"
@@ -37,11 +37,11 @@ const char ApiClient::CA_CERT[] = "-----BEGIN CERTIFICATE-----\n"
         "DKqC5JlR3XC321Y9YeRq4VzW9v493kHMB65jUr9TU/Qr6cf9tveCX4XSQRjbgbME\n"
         "HMUfpIBvFSDJ3gyICh3WZlXi/EjJKSZp4A==\n"
         "-----END CERTIFICATE-----\n";
-
-char ApiClient::network[] = "MIT";
-char ApiClient::password[] = "";
-//char ApiClient::network[] = "Adam ipad";
-//char ApiClient::password[] = "adamsnowdon";
+//
+//char ApiClient::network[] = "MIT";
+//char ApiClient::password[] = "";
+char ApiClient::network[] = "Joseph’s Iphone";
+char ApiClient::password[] = "v6332044";
 
 //char ApiClient::network[] = "iPhone";
 //char ApiClient::password[] = "okokokok";
@@ -362,4 +362,3 @@ StaticJsonDocument<500> ApiClient::fetch_navigation_instructions(char* user_id, 
     }
     return doc;
 }
-
