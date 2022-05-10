@@ -1,28 +1,30 @@
-                    <meta charset="utf-8" emacsmode="-*- markdown -*">
-                            **Indoor Navigation - Final Report**
+<meta charset="utf-8" emacsmode="-*- markdown -*">
+        **Indoor Navigation - Final Report**
 
 Markdeep: https://casual-effects.com/markdeep/#templates
 
 Feature demo: https://casual-effects.com/markdeep/features.md.html#basicformatting/lists
 
-This is a very brief introduction to our project before we get into the details
+Below is a brief introduction to our project.
 
-Description -------------------------------------------------------------------
 
-Description -------------------------------------------------------------------
+Navigating MIT’s campus, with all the patternless building numbers and semi-infinite hallways, can be difficult and disorienting, especially for those unfamiliar with the area. We built a navigation device optimized for pedestrians to get easy directions around MIT’s central campus. The product’s main components are an ESP32 microcontroller, an MPU9250 inertial measurement unit, an LCD, and a button for input. The user may use the button to click through a series of pages describing their options, like choosing a destination, up to a navigation page where an arrow on the LCD continuously updates to point in the direction of the optimal path, accompanied by an ETA. Invisible to the user, the device makes frequent measurements of nearby WiFi signals, whose strength it uses to determine the device’s location through a Google API, and it also queries a server that stores data on shortest paths around campus and returns the necessary information through the air to the ESP.
+
 
 Functionality
 ===============================================================================
 
 Overview
 -------------------------------------------------------------------------------
+Broadly, our navigation device is a handheld computer that guides user’s around MIT’s confusing campus. Our project consists of a server and the esp device that utilizes the tft screen and a button for interfacing, as well as an imu to both use for destination selection and our navigation compass. The device is connected to a battery and a hotspot making it a handheld system.
 
 Motivation
 -------------------------------------------------------------------------------
+We thought this problem would be interesting to solve both because of its usefulness to MIT students and the knowledge we learned in 6.08 that we felt we could apply. The only existing internal navigation system between MIT buildings is manually reading the map on Atlas. We initially thought of creating a mapping device similar to the one on the Apple watch. We wanted the user to know when to turn and just be able to look down at the device and follow its directions without having to have any knowledge about the inner workings of MIT’s complex building layout. We feel that this problem is interesting and applicable, and we have faced many technical challenges when solving it. We were motivated by the idea that our device could actually be useful to us and other individuals accessing MIT’s campus on a daily basis.
 
 Features
 -------------------------------------------------------------------------------
-
+We developed our Tiny Tim navigation device with the typical first-time-visiting pre-frosh in mind, so it is fully equipped to provide simple directions to any of the main academic buildings. To use, the user first inputs a destination by scrolling through a list of buildings by tilting, before selecting one with a short button push, then chooses the floor they want to be guided to. After selecting the destination, the screen displays a few pieces of information: the final destination, the current building location, the eta in seconds, and finally a big arrow that points in the correct direction of their navigation route. At any point during a route, it can be canceled by long pushing the button. When a user arrives at their desired destination, a message telling the user they have arrived appears.
 
 Documentation
 ===============================================================================
@@ -37,16 +39,19 @@ Client System Design
 
 ### Main
 
+![Main state machine](media/state_machines/main.png)
+
 ### ApiClient
 
 ### Compass
 
 ### Destination Selection
+-We have hopes for the Tiny Tim to eventually be made smaller and even into a watch so for inputting a destination, we wanted a simple, but accurate method. The tilting to scroll is very smooth and with just one button the device could be made very small.
 
 ### Navigation
+- The navigation display was designed to correctly instruct, but not overwhelm the user. We wanted to fix the issue where in google maps, the starting direction of your arrow during a route oftens points in the wrong direction. We decided that a compass was necessary to provide clear direction for users to follow, as well as other important pieces of info to help users along the way. For example, the current building is displayed so a user can familiarize themselves with campus.  
 
 ### Tests
-
 
 Server System Design
 -------------------------------------------------------------------------------
@@ -62,17 +67,43 @@ TODO:
 - Describe optimization methods used (caching, apsp, etc.)
 
 ### Tests
-TODO:
-- Describe tests implmented
+-We tested the server side and client side separately before integrating all of our components.
+
+-We have several unit test classes on the server side for the Python code.
+Polygon Tests: Test the parsing of polygons from polygons csv to polygon objects.
+Node Tests: Test the parsing of nodes with and without a polygon csv.
+Edge Tests: Tests that all edges are unique.
+Graph Tests: Tests the saving and loading of a graph to and from a json. Also tests the caching of the results of the all pairs shortest path algorithm.
+Closest Node Tests: Tests whether the closest node is correctly returned given a location in a building.
+Current Building Tests: Tests for each building manually whether a location returns the correct building.
+Dijkstra Tests: Tests that Dijkstra’s returns the correct shortest path.
 
 Parts List
 -------------------------------------------------------------------------------
+- ESP32
+- tft
+- mpu9250 imu
+- button
+- micro usb battery pack
 
 Design Challenges and Decisions
 -------------------------------------------------------------------------------
 TODO:
 - Challenges we ran into and how we solved them (compass, wifi, request handler
-  performance, google lat/lon switch, etc.)
+performance, google lat/lon switch, etc.)
+
+This project was heavier on code and lighter on hardware, and most of our issues came from code not working. Errors ranged from the simple common inevitable errors, like indexing incorrectly and , to more formidable systematic problems that took weeks to solve. Here were some of our bigger roadblocks, and how we got around them.
+
+1. WiFi issues
+Not staying connected to WiFi,
+2. Compass
+Got an ESP stack decoder plugin which didn’t help and we found it by looking.
+Didn’t point in the correct direction
+3. Request handler performance
+4. Calculating the direction for the compass to point too:
+-lots of debugging the formula to calculate the heading counterclockwise from east in radians
+5. Google downloaded data flipping lat and lon
+
 
 
 Code
@@ -82,10 +113,40 @@ Client Side
 -------------------------------------------------------------------------------
 
 ### src/
+The src file contains the central state machine of the project as well as the setup() and loop() functions for the whole script. First we initiate instances of the following classes: Button, TFT_eSPI, ApiClient, Compass, Navigation, and DestinationSelection. We will use these class objects to call specific public functions we have organized in the respective cpp files. We also create an enum with the names of our global states.
+In the START state, we welcome our user and prompt them to press the button to either activate the guide or calibrate the compass.
+In the CALIBRATE state we call compass.calibrate(), a function described below.
+In the DESTINATION_SELECTION state we choose the building and room we want to travel to.
+In the NAVIGATING state, we display where and how far the destination is with an arrow and an ETA. We stay here until the user either arrives at the destination, moving us to the arrived state, or the user long presses to cancel the current navigation and moves to the Confirm Cancel Navigation state.
+In the CONFIRM_CANCEL state, we stay until either a short press confirms that we are canceling the navigation and we move to Start state, or a long press cancels the navigation cancel and we return to the previous route.
+In the ARRIVED state, we will display an arrival message until a short press moves us back to the Start state.
+The setup() function initializes the LCD and compass and displays the welcome message.
+The loop() function calls the only four functions which must be continuously called, those relating to measurements and paging through the state machine. These are
+
+compass.refresh_data();
+compass.calc_quaternion();
+int button_flag = button.update();
+global_update(button_flag);
+
+One of our big goals with src was to be the epicenter of a modularized body of code for easy understanding and for distributing and isolating sources of error for easy debugging.
 
 #### Compass
 ##### Compass.h
 ##### Compass.cpp
+A compass object is initialized in src and has access to the following public functions:
+1. initialize();
+This includes all the functions and setup for waking up the IMU and ensuring it is functioning/has the necessary parameters.
+2. calibrate();
+This function is called when the user wishes to calibrate their IMU for their specific hardware setup. It tells the user to tumble the compass in figure 8 patterns for 30 seconds so that the internal calibration methods can collect data and generate new calibration parameters, which are automatically updated.
+3. refresh_data();
+This function measures the gyroscope, accelerometer, and magnetometer with the IMU
+4. calc_quaternion();
+Using the new values from refresh_data we can compute the quaternion that represents our most accurate estimate of the actual rotation in space of the device.
+5. update_display(float dir_next_node);
+This is the function called once every loop period in the navigation_display state. It calls an internal function angle_return which makes use of the updated quaternions to figure out the heading of the compass. This value, which is an angle offset from east, is used to determine what corrective angle should be applied to the arrow for it to point in the direction of the optimal path. Using this angle and the Adafruit_GFX.h library we construct the graphics that build the arrow and display them.
+
+Behind the scenes the compass code is mostly ensuring everything is set up and measured and updated and scaled and offset correctly, including using the Mahony quaternion update sensor fusion algorithm which converts IMU measurements into a quaternion representing rotation.
+
 
 #### API Client
 ##### ApiClient.h
@@ -94,6 +155,19 @@ Client Side
 #### Destination Selection
 ##### DestinationSelection.h
 ##### DestinationSelection.cpp
+A DestinationSelection obj is initialized with pointers to the tft and to the compass in src.ino and has access to a few public functions:
+1. initialize_imu();
+This function sets up the imu by checking if the imu that is a field of our DestinationSelection class has imu.setupIMU(1) is true, otherwise it restarts the imu.
+2. begin_selection();
+This sets our boolean state variable, selecting, to true meaning that the process of selecting a destination has started.
+3. end_selection();
+This sets our selecting variable to false, meaning the process of selecting a destination is over
+4. get_destination_building(char* building);
+This sets the parameter char* building to the current building number which is found by getting the letters at index destination_building_index of the BUILDINGS char array.
+5. get_destination_floor(char* floor);
+This sets the parameter char* floor to the current floor number which is found by getting the letters at index destination_floor_index of the FLOORS char array.
+6. update(int button_flag);
+This is where the work of destination selection happens. It is called once per loop in the src.ino file if the current state is destination selection. Taking in a button flag, the function updates checks the imu readings that determine if the device is tilted or not and determines what state, value, and index various variables should be so that selecting an destination works properly.
 
 #### Navigation
 ##### Navigation.h
@@ -105,6 +179,7 @@ Client Side
 #### Compass/
 #### ApiClient/
 #### DestinationSelection/
+-These tests were manual tests where we uploaded the code to the esp and made sure we could go through the destination selection and print the intended destination to the Serial Monitor. We tested whether it worked for different buildings and floor.
 #### Navigation/
 
 
@@ -137,52 +212,86 @@ Milestones
 Overview
 -------------------------------------------------------------------------------
 
-Thursday April 7, 2022: Week 0 Milestones
-  - Milestone 1
-  - Milestone 2
-  - Milestone 3
+Thursday April 7, 2022: Week 0 Milestones and Project Proposal
+  - Milestone 1: Is everyone present?
+  - Milestone 2: Is the project feasible? Can it be done in 4 weeks?
+  - Milestone 3: What hardware is needed? How will hardware be distributed?
+  - Milestone 4: How will work be divided among teams?
+  - Milestone 5: When and how will the team work together?
+  - Milestone 6: Are the milestones reasonable?
 
 Thursday April 14, 2022: Week 1 Milestones
-  - Milestone 1
-  - Milestone 2
-  - Milestone 3
+  - Milestone 1: Represent group of MIT's building as weighted graph (from hard coded nodes and edge weights)
+  - Milestone 2: Demonstrate path finding
+  - Milestone 3: Contact and then meet with Joe about purchase of compass/magnetometer system and how we would interpret the data (importing libraries vs doing it ourselves) Also talk about Lipo batteries, battery housings, MP3 availability. Order/request parts by Thursday morning.
+  - Milestone 4: Implement finite state machine for continually fetching current lat, lon and sending POST request to server
+  - Milestone 5: Parse response from the server as JSON on the ESP
+  - Milestone 6: Sort out our input using similar functionality to the wiki word chooser except for numbers   
 
 Thursday April 21, 2022: Week 2 Milestones
-  - Milestone 1
-  - Milestone 2
-  - Milestone 3
+  - Milestone 1: Have functioning server side which returns relative user journey information
+  - Milestone 2: Implement finite state machine for selecting destination
+  - Milestone 3: Figure out a more reliable network connection to use in MIT buildings
+  - Milestone 4: Autocomplete for building / room input
+  - Milestone 5: Add more detail to current graph representation of MIT buildings
+  - Milestone 6: Integrate compass hardware with existing software to display desired walking direction. This will involve figuring out sensor fusion, integrating code into ESP's state machine, calibration of where geographic north vs magnetic north is etc., and display graphics. The direction to the next node will be included in the response from post requests to the server, see first deliverable.
 
 Thursday April 28, 2022: Week 3 Milestones
-  - Milestone 1
-  - Milestone 2
-  - Milestone 3
+  - Milestone 1: Optimize server side performance
+  - Milestone 2: Refactor compass code into "classy compass"
+  - Milestone 3: Refactor room selection code into "classy room selection"
+  - Milestone 4: Refactor geolocation + server interaction into "classy geolocation"
+  - Milestone 5: Integrate compass + room selection + geolocation in main state machine
+  - Milestone 6: Isolate IMU calibration in its own Arduino sketch for quick and easy calibration of new IMUs
 
 Thursday May 5, 2022: Week 4 Milestones
-  - Milestone 1
-  - Milestone 2
-  - Milestone 3
+  - Milestone 1: Individual test cases for ApiClient
+  - Milestone 2: Individual test cases for Navigation
+  - Milestone 3: Individual test cases for DestinationSelection
+  - Milestone 4: Individual test cases for Compass
+  - Milestone 5: Additional test cases for the server
+  - Milestone 6: Functioning project
+  - Milestone 7: Incorporate compass calibration into main state machine
 
 
 Week 0
 -------------------------------------------------------------------------------
 
+The beginning of week 0 was focused on brainstorming ideas for our final project and deciding on something we thought was both feasible and creative.
+After lots of discussion, we decided to go with the TinyTim project because we believed we could do an effective job and it was a project we thought would be
+beneficial to students at MIT. The project proposal we wrote highlighted the goals of the project along with software design, hardware parts we would need, and potential
+setbacks we could face along the way.
 
 Week 1
 -------------------------------------------------------------------------------
 
+This week we focused on representing a group of MIT's buildings as a weighted graph (from hard coded nodes and edge weights) which was done through google maps. We
+also implemented a single shortest path algorithm that had some unit tests to show it could work with the nodes on our hard coded graph. Along with the addition of
+this code to the server side, we also created some Arduino code which handled sending and receiving a GET request from our team's server and also parsed the response.
+Finally, we utilized functionality from the wiki word chooser project earlier in the semester to have a system to select buildings that our server could find a path to.
 
 Week 2
 -------------------------------------------------------------------------------
 
+After implementing a graph of some MIT buildings and an algorithm to find a path between buildings (nodes), we now began to create a python query response which
+would send the ESP32 relevant information about a user's journey. On top of this, we also focused on updating the system for selecting a building by creating a hard-coded
+dictionary of all the buildings/nodes that we have available on our team's server. Finally, we separately integrated a compass to our ESP32 which required independent
+testing and calibrating of an IMU that had compass functionality. As a result, we were able to have an arrow on our LCD display which pointed consistently north. This
+functionality would come in handy later to have an arrow giving directions as to which way a user would need to walk on their path.
 
 Week 3
 -------------------------------------------------------------------------------
 
+Now that we had a solid server side for our application, we turned our focus to optimizing server side performance and cleaning up the code that would run on the ESP32.
+To optimize the server side performance, the server team created a script which ran through the csv files we had created with all the nodes for the MIT buildings we had
+mapped and found the shortest paths between nodes to save to a separate file. Having a separate file with all the predetermined shortest paths between nodes meant
+we could send server responses much faster. On the ESP32 side of our codebase, we started to refactor our code to have classy versions of our compass, destination selection, and server querying. Our final goal for this week was to integrate all the classy versions of our code into one overarching state machine, but we had to push this goal back to the following week.
 
 Week 4
 -------------------------------------------------------------------------------
 
-
+Our final week of the project was focused on creating unit tests for each independent class that would be running on the ESP32 (in the state machine). This strategy
+meant we could test all of the components of our final system independently to make sure they work functioning correctly. We also added an option in our state machine to transition to a calibration mode before moving to giving the user directions. Finally, we compiled all the code together to make a functioning project and recorded a working journey in the MIT buildings we had mapped. Unfortunately, we ran into a problem with losing connection to WiFi but managed to get the ESP32 connected to hotspot to offer a more reliable functionality.
 
 Team Members
 ===============================================================================
