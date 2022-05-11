@@ -388,16 +388,16 @@ Our request handler was fairly straightforward. It involved creating our graph, 
 
 
 ### Tests
--We tested the server side and client side separately before integrating all of our components.
+We tested the server side and client side separately before integrating all of our components.
 
--We have several unit test classes on the server side for the Python code.
-Polygon Tests: Test the parsing of polygons from polygons csv to polygon objects.
-Node Tests: Test the parsing of nodes with and without a polygon csv.
-Edge Tests: Tests that all edges are unique.
-Graph Tests: Tests the saving and loading of a graph to and from a json. Also tests the caching of the results of the all pairs shortest path algorithm.
-Closest Node Tests: Tests whether the closest node is correctly returned given a location in a building.
-Current Building Tests: Tests for each building manually whether a location returns the correct building.
-Dijkstra Tests: Tests that Dijkstra’s returns the correct shortest path.
+We have several unit test classes on the server side for the Python code.
+- Polygon Tests: Test the parsing of polygons from polygons csv to polygon objects.
+- Node Tests: Test the parsing of nodes with and without a polygon csv.
+- Edge Tests: Tests that all edges are unique.
+- Graph Tests: Tests the saving and loading of a graph to and from a json. Also tests the caching of the results of the all pairs shortest path algorithm.
+- Closest Node Tests: Tests whether the closest node is correctly returned given a location in a building.
+- Current Building Tests: Tests for each building manually whether a location returns the correct building.
+- Dijkstra Tests: Tests that Dijkstra’s returns the correct shortest path.
 
 Parts List
 -------------------------------------------------------------------------------
@@ -407,23 +407,25 @@ Parts List
 - button
 - micro USB battery pack
 
+
 Design Challenges and Decisions
 -------------------------------------------------------------------------------
-TODO:
-- Challenges we ran into and how we solved them (compass, wifi, request handler
-performance, google lat/lon switch, etc.)
-
 This project was heavier on code and lighter on hardware, and most of our issues came from code not working. Errors ranged from the simple common inevitable errors, like indexing incorrectly and , to more formidable systematic problems that took weeks to solve. Here were some of our bigger roadblocks, and how we got around them.
 
 1. WiFi issues
-Not staying connected to WiFi when moving around campus. We had problems connecting the ESP32 to an iPhone hotspot but eventually sorted that out.
+Not staying connected to WiFi when moving around campus was an issue. We had problems connecting the ESP32 to an iPhone hotspot but eventually sorted that out. Thus, we were able to sustain a pretty reliable network connection while moving around on campus so that we could send http requests.
+
 2. Compass
-Got an ESP stack decoder plugin which didn’t help and we found it by looking.
-Didn’t point in the correct direction
+The compass didn’t point in the correct direction at first, but after digging into the code for how we calibrated the compass, we were able to get it pointing in the right direction (for a certain radian input, it was able to point an arrow a relative offset from East).
+
 3. Request handler performance
+The request handler had an issue when we would have the ESP32 connected to an iPhone hotspot. With certain iPhone hotspots, the team server request would respond with a 502 bad gateway error for some reason. Fortunately, the request would work consistently when connected to a particular teammate’s iPhone hotspot.
+
 4. Calculating the direction for the compass to point too:
--lots of debugging the formula to calculate the heading counterclockwise from east in radians
+There were lots of bugs with the formula to calculate the heading counterclockwise from east in radians. We also had to make sure that the calculation on our server side to get direction between nodes could be translated to what was needed on the ESP. After doing some rigorous analysis of the formulas we use, we were able to create a system which allowed the lcd display to show an arrow pointing in the direction which the user needs to walk.
+
 5. Google downloaded data flipping lat and lon
+We mistakenly thought that Google’s API sent its latitude and longitude response in a particular order, but realized it was flipped. This was an easy fix as we simply needed to switch the variables we were setting after parsing the Google API response.
 
 
 
@@ -773,12 +775,74 @@ public:
 
 
 #### src.ino
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C++
+const int BUTTON_PIN = 45;
+Button button(BUTTON_PIN);
+
+// Define global variables
+TFT_eSPI tft = TFT_eSPI();
+ApiClient apiClient;
+Compass compass(&tft, 100);
+Navigation navigator(&apiClient, &compass, &tft);
+DestinationSelection destination_selection(&tft, &compass);
+
+uint8_t current_floor = 1;
+char destination_building[2];
+char destination_floor[2];
+
+enum global_state
+{
+  START,
+  CALIBRATE,
+  DESTINATION_SELECTION,
+  NAVIGATING,
+  CONFIRM_CANCEL,
+  ARRIVED
+};
+
+global_state state = START;
+
+int destination_selection_flag;
+int navigation_flag;
+
+void setup() {
+    Serial.begin(115200); // Set up serial
+    while(!Serial);
+
+    pinMode(BUTTON_PIN, INPUT_PULLUP);
+
+    tft.init();                             // init screen
+    tft.setRotation(2);                     // adjust rotation
+    tft.setTextSize(1);                     // default font size, change if you want
+    tft.fillScreen(TFT_BLACK);              // fill background
+    tft.setTextColor(TFT_GREEN, TFT_BLACK); // set color of font to hot pink foreground, black background
+    tft.println("Tiny Tim booting... \nplease wait\n\n");
+
+    tft.println("Initializing Wifi...");
+    apiClient.initialize_wifi_connection();
+
+    tft.println("Initializing Compass...");
+    compass.initialize();
+
+    display_start_message();
+}
+
+void loop(){
+  compass.refresh_data();                              // This must be done each time through the loop
+  compass.calc_quaternion();                           // This must be done each time through the loop
+  int button_flag = button.update();
+  global_update(button_flag);
+}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This is the main Arduino executable file. It is fairly straightforward in that it implements the main state machine defined in the system design and puts together every component. In other words, this is the file that is run our device and this is where every component truly comes together. This includes everything from button presses, to the api client, to the navigator, to destination selection, to the compass, and even the TFT. It is in this file that we initialize the different components and use the flags returned to transition into / out of different states.
 
 
 ### tests/
 The tests were meant to mimic external calls to each component as if they were being called from `src.ino`.
 
 #### Compass/
+This folder held the manual tests for the compass. The goal here was to test all components of the compass as if they were being called externally. This essentially served as an integration test for the compass component. This culminated in a script (i.e. src.ino) file we could run that would allow us to verify that the compass was working as intended without all the additional components from the main file for our project (the one that contains every component).
+
 #### ApiClient/
 This folder held the tests for the ApiClient. We tested basic functionality, i.e. connecting to WiFi, sending requests to Google’s Api and our server and receiving a response, and correctly parsing responses.
 
@@ -1046,17 +1110,20 @@ Thursday May 5, 2022: Week 4 Milestones
 Server Milestones
 -------------------------------------------------------------------------------
 - Represent group of MIT's building as weighted graph (from hard coded nodes and edge weights)
-![Building graph](media/map_overlay/nodes_1.png)
 - Demonstrate path finding
-![Graph Code Skeleton](media/Pictures for Final Report/nodes_1.png)
 - Have functioning server side which returns relative user journey information
-JOE CAN YOU PLEASE ADD MOST RELEVANT PICTURES HERE? This is week 2 deliverable 1
 - Add more detail to current graph representation of MIT buildings
 - Edges can be added to our graph overlay, exported to an edges.csv file, and fed to our program. Our code will automatically parse the edges, weight them, and generate our graph.
-- Multiple floors, elevators and stairs ![Floor 0](media/map_overlay/nodes_0.png) ![Elevators](media/map_overlay/nodes_elevators.png) ![Stairs](media/map_overlay/nodes_stairs.png)
+- Multiple floors, elevators and stairs
 - Optimize server side performance by precomputing shortest paths and indexing into this list upon a server request.
-JOE AGAIN HERE COULD YOU PLEASE DECIDE WHAT PICTURES YOU WOULD WANT. There are several in the deliverable (Week 3 deliverable 1) and I’ll let you choose and upload which are best.
 
+![Floor 1](media/map_overlay/nodes_1.png)
+![Floor 0](media/map_overlay/nodes_0.png)
+![Elevators](media/map_overlay/nodes_elevators.png)
+![Stairs](media/map_overlay/nodes_stairs.png)
+
+![Cache vs No Cache Implementation](media/server/cache_no_cache.png)
+![Cache Performance](media/server/cache_performance.png)
 
 
 
@@ -1089,7 +1156,7 @@ Compass Milestones
 
 
 
-Destination Select Milestones
+Destination Selection Milestones
 -------------------------------------------------------------------------------
 - Consistently get building and room numbers and be able to print them to the lcd screen
 [Consistent Building Selection Video](https://vm.tiktok.com/ZTdQu6JRG/)
