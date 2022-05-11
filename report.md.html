@@ -20,7 +20,7 @@ We thought this problem would be interesting to solve both because of its useful
 
 Features
 -------------------------------------------------------------------------------
-We developed our Tiny Tim navigation device with the typical first-time-visiting pre-frosh in mind, so it is fully equipped to provide simple directions to any of the main academic buildings. To use, the user first inputs a destination by scrolling through a list of buildings by tilting, before selecting one with a short button push, then chooses the floor they want to be guided to. After selecting the destination, the screen displays a few pieces of information: the final destination, the current building location, the eta in seconds, and finally a big arrow that points in the correct direction of their navigation route. At any point during a route, it can be canceled by long pushing the button. When a user arrives at their desired destination, a message telling the user they have arrived appears.
+We developed our Tiny Tim navigation device with the typical first-time-visiting pre-frosh in mind, so it is fully equipped to provide simple directions to any of the main academic buildings. To use, the user first inputs a destination by scrolling through a list of buildings by tilting, selecting one with a short button push, and choosing the floor they want to be guided to. After selecting the destination, the screen displays a few pieces of information: the final destination, the current building location, the ETA in seconds, and finally a big arrow that points in the correct direction of their navigation route. At any point during a route, it can be canceled by a long push of the button. When a user arrives at their desired destination, a message telling the user they have arrived appears.
 
 Documentation
 ===============================================================================
@@ -28,7 +28,7 @@ Documentation
 Full System Design
 -------------------------------------------------------------------------------
 
-Our system consists of two primary components: our server and the ESP32 microcontroller. The server is responsible for heavy computation such as shortest path, graph construction, caching, and formatting the response. The ESP32, on the other hand, is the user's interface for our system. It is through the ESP32 that the user can enter their destination,
+Our system consists of two primary components: our server and the ESP32 microcontroller. The server is responsible for heavy computation such as shortest path, graph construction, caching, and formatting the response. The ESP32, on the other hand, is the user's interface for our system. It is through the ESP32 that the user can enter their destination
 and follow the instructions to receive navigation instructions. The goal of our system was to abstract most of the complex functionality and allow the user to interface with our entire system through only an LCD and a single button.
 
 Client System Design
@@ -41,15 +41,15 @@ This is the main state machine of our system. As seen above, the 6 states the us
 
 START: This is the state when the device is first turned on. There is very little actually happening except for an introductory screen with instructions being displayed.
 
-CALIBRATE: When this state is entered, `compass.calibrate()` is called which begins a 30-second period of compass calibration.
+CALIBRATE: When this state is entered, `compass.calibrate()` is called, which begins a 30-second period of compass calibration.
 
 DESTINATION_SELECTION: When this state is entered, `destination_selection_flag = destination_selection.update(button_flag)`. The functionality of selecting a destination is abstracted by our DestinationSelection component. When the `destination_selection_flag == 1`, the user has selected their destination, and we can transition states.
 
 NAVIGATION: When this state is entered, `navigation_flag = navigator.navigate()`. The details of navigation (i.e. locating, routing, and displaying compass) are abstracted by our Navigation component. When the `navigation_flag == 1`, the user has arrived and we can transition states.
 
-ARRIVED: This state is fairly simple. A message is displayed to the user letting them know they have arrived at their destination. From here, a user can restart and navigate to a new destination. To
+ARRIVED: This state is fairly simple. A message is displayed to the user letting them know they have arrived at their destination. From here, a user can restart and navigate to a new destination.
 
-CONFIRM_CANCEL: This state is fairly simple. If at any point, a user wants to end their navigation prematurely, they will enter into this state where they will have the option to resume navigation, or confirm their decision to cancel and start again.
+CONFIRM_CANCEL: This state is fairly simple. If at any point, a user wants to end their navigation prematurely, they will enter into this state, where they will have the option to resume navigation or confirm their decision to cancel and start again.
 
 ### ApiClient
 The ApiClient is the component within our system that allows our ESP32 to directly communicate with both Google’s API for retrieving current latitude and longitude and also our team’s server. Once we receive a response from Google’s API or our team’s server, we are able to parse the response by utilizing an implementation we created in a lab earlier in the class. Also, our ApiClient makes sure that we are connected to a WiFi network before any requests are sent out to ensure our requests have a network to be sent over.
@@ -57,20 +57,7 @@ The ApiClient is the component within our system that allows our ESP32 to direct
 ### Compass
 We optimized our system for the walking commuter by including a continuously updated arrow that displays on the screen and tells the user which way to walk. No more Google Maps thinking you’re holding your iPhone upside down and suddenly turning around after you’ve walked forty meters in the wrong direction. An onboard IMU, equipped with a magnetometer, gyroscope, and accelerometer calibrated to calculate rotation relative to true North, provides the user the directions they need relative to where they’re facing as soon as they select a destination and guides them the whole way there.
 
-A compass object defined by our Compass class has the following public functions.
-1. initialize();
-This includes all the functions and setup for waking up the IMU and ensuring it is functioning/has the necessary parameters.
-2. calibrate();
-This function is called when the user wishes to calibrate their IMU for their specific hardware setup. It tells the user to tumble the compass in figure 8 patterns for 30 seconds so that the internal calibration methods can collect data and generate new calibration parameters, which are automatically updated.
-3. refresh_data();
-This function measures the gyroscope, accelerometer, and magnetometer with the IMU
-4. calc_quaternion();
-Using the new values from refresh_data, this function computes the quaternion that represents our most accurate estimate of the actual rotation in space of the device.
-5. update_display(float dir_next_node);
-This is the function called once every loop period in the navigation_display state. It calls an internal function angle_return which makes use of the updated quaternions to figure out the heading of the compass. This value, which is an angle offset from east, is used to determine what corrective angle should be applied to the arrow for it to point in the direction of the optimal path. Using this angle and the Adafruit_GFX.h library we construct the graphics that build the arrow and display them.
-
-Behind the scenes the compass code is mostly ensuring everything is set up and measured and updated and scaled and offset correctly, including using the Mahony quaternion update sensor fusion algorithm which converts IMU measurements into a quaternion representing rotation.
-
+There are a number of steps involved in the calculation of the angle of the arrow displayed on the LCD. The compass measures an offset angle from North. If we display arrow with the negative of this angle, and we adjust by the relative rotation of the axes of the IMU and LCD, then we already have a compass that points North. Since the server sends the direction to the next node as an angle offset from East using the math.arctan2() function, we must adjust our North-facing compass first by 90 degrees, and then by the angle dir_next_node from the server. Getting negative signs right and ensuring proper units was challenging. 
 
 ### Destination Selection
 ![Destination Selection](media/state_machines/destination_selection.png)
@@ -79,7 +66,7 @@ We have hopes for the Tiny Tim to eventually be made smaller and even into a wat
 
 The Destination Selection component has 5 states: IDLE: BUILDING_SELECTION, CONFIRM_DESTINATION, and DESTINATION_SELECTED.
 
-IDLE: This is the default state for the destination selection. In this state, there is nothing happening. Only once the user begins their destination selection do they transition out of this state and into BUILDING_SELECTION.html
+IDLE: This is the default state for the destination selection. In this state, there is nothing happening. Only once the user begins their destination selection do they transition out of this state and into BUILDING_SELECTION
 
 BUILDING_SELECTION: It is in this state that the user is able to tilt to scroll through the building selection choices. Once they have arrived at their desired choice, they can click the button to confirm it and transition into floor selection. A long clear also clears the selection
 
@@ -109,7 +96,7 @@ NAVIGATING: This state continually updates the compass to make sure that the arr
 ### Tests
 With the tests of our system on the ESP32, we wanted to make sure all the different components were able to run correctly independent from one another. Thus, we created separate folders to test each of the components: ApiClient, Navigation, Compass, and Destination Selection. For ApiClient, we made sure to test that we were able to create a reliable WiFi connection, consistently were able to send requests to Google’s API and our server (and receive a response), and also correctly parse responses.
 
-For Navigation, we hard coded a current node as well as a destination node from our graph and had the “navigator” request the shortest path from our server to tell the user the next node that they need to go to. The “navigate” function within the Navigation class has its own state machine which keeps track of which part of the process of navigating the user is in (IDLE, LOCATING, ROUTING, NAVIGATING). Basically, our test runs through navigating the initial node from the starting location but we print out the response from our server to make sure it is correct.
+For Navigation, we hard coded a current node as well as a destination node from our graph and had the “navigator” request the shortest path from our server to tell the user the next node that they need to go to. The “navigate” function within the Navigation class has its own state machine which keeps track of which part of the process of navigating the user is in (IDLE, LOCATING, ROUTING, NAVIGATING). Basically, our test runs through navigating the initial node from the starting location, but we print out the response from our server to make sure it is correct.
 
 For Compass, we took the one compass class and built an isolated arduino script for it that calls and verifies each public method of the compass class (including the calibration, refresh data, calculate quaternion, angle of return, update display, and initialization). Some of our bigger bugs were not calling refresh data and calc quaternion every time through the loop, and we were 1 indexing instead of 0 indexing in a small nearly invisible variable.
 
@@ -162,7 +149,7 @@ class Polygon:
     self.vertices = [] if vertices is None else vertices
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Our graph is the main component of our server, and it represents the network of MIT buildings we support on our system. Using google maps, we dropped pins at strategic locations (1+ per building) and connected them based on our knowledge of valid footpaths. This network of nodes and edges makes up our graph. Additionally, each building is represented as a Polygon object which is essentially a list of adjacent points of a building where each point is a coordinate. This can also be seen in the image below:
+Our graph is the main component of our server, and it represents the network of MIT buildings we support on our system. Using google maps, we dropped pins at strategic locations (1+ per building) and connected them based on our knowledge of valid footpaths. This network of nodes and edges makes up our graph. Additionally, each building is represented as a Polygon object which is essentially a list of adjacent points of a building, where each point is a coordinate. This can also be seen in the image below:
 
 ![Building graph](media/map_overlay/nodes_1.png)
 
@@ -415,10 +402,10 @@ Dijkstra Tests: Tests that Dijkstra’s returns the correct shortest path.
 Parts List
 -------------------------------------------------------------------------------
 - ESP32
-- tft
-- mpu9250 imu
+- TFT LCD
+- MPU9250 IMU
 - button
-- micro usb battery pack
+- micro USB battery pack
 
 Design Challenges and Decisions
 -------------------------------------------------------------------------------
