@@ -57,7 +57,7 @@ The ApiClient is the component within our system that allows our ESP32 to direct
 ### Compass
 We optimized our system for the walking commuter by including a continuously updated arrow that displays on the screen and tells the user which way to walk. No more Google Maps thinking you’re holding your iPhone upside down and suddenly turning around after you’ve walked forty meters in the wrong direction. An onboard IMU, equipped with a magnetometer, gyroscope, and accelerometer calibrated to calculate rotation relative to true North, provides the user the directions they need relative to where they’re facing as soon as they select a destination and guides them the whole way there.
 
-There are a number of steps involved in the calculation of the angle of the arrow displayed on the LCD. The compass measures an offset angle from North. If we display arrow with the negative of this angle, and we adjust by the relative rotation of the axes of the IMU and LCD, then we already have a compass that points North. Since the server sends the direction to the next node as an angle offset from East using the math.arctan2() function, we must adjust our North-facing compass first by 90 degrees, and then by the angle dir_next_node from the server. Getting negative signs right and ensuring proper units was challenging. 
+There are a number of steps involved in the calculation of the angle of the arrow displayed on the LCD. The compass measures an offset angle from North. If we display arrow with the negative of this angle, and we adjust by the relative rotation of the axes of the IMU and LCD, then we already have a compass that points North. Since the server sends the direction to the next node as an angle offset from East using the math.arctan2() function, we must adjust our North-facing compass first by 90 degrees, and then by the angle dir_next_node from the server. Getting negative signs right and ensuring proper units was challenging.
 
 ### Destination Selection
 ![Destination Selection](media/state_machines/destination_selection.png)
@@ -216,45 +216,45 @@ class Route:
   distance: float
 
 class Graph:
-def get_closest_node(self, point: Location, floor: int = 1, node_type: NodeType = NodeType.BUILDING) -> str:
-  """
-  Given location, find the closest building node in the graph on the same floor. This will be used to as the start
-  node when calculating the shortest path from a location
-  """
-  pass
+  def get_closest_node(self, point: Location, floor: int = 1, node_type: NodeType = NodeType.BUILDING) -> str:
+    """
+    Given location, find the closest building node in the graph on the same floor. This will be used to as the start
+    node when calculating the shortest path from a location
+    """
+    pass
 
-def sssp(self, src: str):
-  """
-  Solves sssp from src node on our path.
+  def sssp(self, src: str):
+    """
+    Solves sssp from src node on our path.
 
-  src is a valid node id and graph is a valid graph representation
+    src is a valid node id and graph is a valid graph representation
 
-  Returns distance dictionary with shortest distance to every node and parent point dictionary
-  """
-  pass
+    Returns distance dictionary with shortest distance to every node and parent point dictionary
+    """
+    pass
 
-@staticmethod
-def parse_sssp_parent(parent: Dict[str, str], dest: str):
-  """
-  Takes in parent pointer dictionary (result of single source shortest path algorithm) and returns a list of
-  node ids represent the shortest path to destination.
-  """
-  pass
+  @staticmethod
+  def parse_sssp_parent(parent: Dict[str, str], dest: str):
+    """
+    Takes in parent pointer dictionary (result of single source shortest path algorithm) and returns a list of
+    node ids represent the shortest path to destination.
+    """
+    pass
 
-def find_shortest_path(self, src: str, building_name: str, floor: int = 1, use_cache: bool = True) -> Route:
-  """
-  Takes in a source node, a destination building and floor, and returns a route which represents the shortest path
-  from the source to the destination. This process involves running Djikstra's to solve sssp and then parsing the
-  parent pointer to get a chain of nodes as the shortest path.
-  """
-  pass
+  def find_shortest_path(self, src: str, building_name: str, floor: int = 1, use_cache: bool = True) -> Route:
+    """
+    Takes in a source node, a destination building and floor, and returns a route which represents the shortest path
+    from the source to the destination. This process involves running Djikstra's to solve sssp and then parsing the
+    parent pointer to get a chain of nodes as the shortest path.
+    """
+    pass
 
-def apsp(self):
-  """
-  For every valid source node (i.e. building nodes), destination building, and destination floor combination,
-  this runs self.find_shortest_path() and returns a mapping (src, building, floor) -> Route. This will allow
-  us to easily cache the shortest path in the future (instead of having to run it on every request).
-  """
+  def apsp(self):
+    """
+    For every valid source node (i.e. building nodes), destination building, and destination floor combination,
+    this runs self.find_shortest_path() and returns a mapping (src, building, floor) -> Route. This will allow
+    us to easily cache the shortest path in the future (instead of having to run it on every request).
+    """
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -287,18 +287,18 @@ class Graph:
     """
     pass
 
-def save_to_json(self, json_file_path: str):
-  """
-  Dumps graph representation to json file.
+  def save_to_json(self, json_file_path: str):
+    """
+    Dumps graph representation to json file.
 
-  {
-    node_id: {
-      'node': Node,
-      'adj': {n1_id: dist, n2_id: dist, ..., ni_id: dist}
-    },
-  }
-  """
-  pass
+    {
+      node_id: {
+        'node': Node,
+        'adj': {n1_id: dist, n2_id: dist, ..., ni_id: dist}
+      },
+    }
+    """
+    pass
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This optimization allowed us to very efficiently recreate our graph on every request without having to parse 6+ different files. Instead, we can very easily load the json file as a python dictionary and iterate over each entry to create our graph.
