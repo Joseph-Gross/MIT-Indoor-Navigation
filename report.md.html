@@ -1010,24 +1010,21 @@ Weekly Overview
 -------------------------------------------------------------------------------
 
 
-Week 0
--------------------------------------------------------------------------------
+### Week 0
 
 The beginning of week 0 was focused on brainstorming ideas for our final project and deciding on something we thought was both feasible and creative.
 After lots of discussion, we decided to go with the TinyTim project because we believed we could do an effective job and it was a project we thought would be
 beneficial to students at MIT. The project proposal we wrote highlighted the goals of the project along with software design, hardware parts we would need, and potential
 setbacks we could face along the way.
 
-Week 1
--------------------------------------------------------------------------------
+### Week 1
 
 This week we focused on representing a group of MIT's buildings as a weighted graph (from hard coded nodes and edge weights) which was done through google maps. We
 also implemented a single shortest path algorithm that had some unit tests to show it could work with the nodes on our hard coded graph. Along with the addition of
 this code to the server side, we also created some Arduino code which handled sending and receiving a GET request from our team's server and also parsed the response.
 Finally, we utilized functionality from the wiki word chooser project earlier in the semester to have a system to select buildings that our server could find a path to.
 
-Week 2
--------------------------------------------------------------------------------
+### Week 2
 
 After implementing a graph of some MIT buildings and an algorithm to find a path between buildings (nodes), we now began to create a python query response which
 would send the ESP32 relevant information about a user's journey. On top of this, we also focused on updating the system for selecting a building by creating a hard-coded
@@ -1035,16 +1032,14 @@ dictionary of all the buildings/nodes that we have available on our team's serve
 testing and calibrating of an IMU that had compass functionality. As a result, we were able to have an arrow on our LCD display which pointed consistently north. This
 functionality would come in handy later to have an arrow giving directions as to which way a user would need to walk on their path.
 
-Week 3
--------------------------------------------------------------------------------
+### Week 3
 
 Now that we had a solid server side for our application, we turned our focus to optimizing server side performance and cleaning up the code that would run on the ESP32.
 To optimize the server side performance, the server team created a script which ran through the csv files we had created with all the nodes for the MIT buildings we had
 mapped and found the shortest paths between nodes to save to a separate file. Having a separate file with all the predetermined shortest paths between nodes meant
 we could send server responses much faster. On the ESP32 side of our codebase, we started to refactor our code to have classy versions of our compass, destination selection, and server querying. Our final goal for this week was to integrate all the classy versions of our code into one overarching state machine, but we had to push this goal back to the following week.
 
-Week 4
--------------------------------------------------------------------------------
+### Week 4
 
 Our final week of the project was focused on creating unit tests for each independent class that would be running on the ESP32 (in the state machine). This strategy
 meant we could test all of the components of our final system independently to make sure they work functioning correctly. We also added an option in our state machine to transition to a calibration mode before moving to giving the user directions. Finally, we compiled all the code together to make a functioning project and recorded a working journey in the MIT buildings we had mapped. Unfortunately, we ran into a problem with losing connection to WiFi but managed to get the ESP32 connected to hotspot to offer a more reliable functionality.
