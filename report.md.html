@@ -577,15 +577,15 @@ class Compass {
 
 
 A compass object is initialized in src and has access to the following public functions:
-1. initialize();
+##### initialize();
 This includes all the functions and setup for waking up the IMU and ensuring it is functioning/has the necessary parameters.
-2. calibrate();
+##### calibrate();
 This function is called when the user wishes to calibrate their IMU for their specific hardware setup. It tells the user to tumble the compass in figure 8 patterns for 30 seconds so that the internal calibration methods can collect data and generate new calibration parameters, which are automatically updated.
-3. refresh_data();
+##### refresh_data();
 This function measures the gyroscope, accelerometer, and magnetometer with the IMU
-4. calc_quaternion();
+##### calc_quaternion();
 Using the new values from refresh_data we can compute the quaternion that represents our most accurate estimate of the actual rotation in space of the device.
-5. update_display(float dir_next_node);
+##### update_display(float dir_next_node);
 This is the function called once every loop period in the navigation_display state. It calls an internal function angle_return which makes use of the updated quaternions to figure out the heading of the compass. This value, which is an angle offset from east, is used to determine what corrective angle should be applied to the arrow for it to point in the direction of the optimal path. Using this angle and the Adafruit_GFX.h library we construct the graphics that build the arrow and display them.
 
 Behind the scenes the compass code is mostly ensuring everything is set up and measured and updated and scaled and offset correctly, including using the Mahony quaternion update sensor fusion algorithm which converts IMU measurements into a quaternion representing rotation.
@@ -644,18 +644,18 @@ public:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 An ApiClient object is initialized in our src file and utilized to make requests to Google’s API and our team’s server. ApiClient.h defines the variables and functions that were implemented in ApiClient.cpp:
-1. initialize_wifi_connection();
+##### initialize_wifi_connection();
 This function is what is used to make a connection to WiFi. It utilizes the WiFiClient.h library to loop through the BSSIDs that are near the ESP32 and then connects to a given hardcoded network stored in the network variable (by using a hardcoded password stored in the password variable).
-2. char_append(char *buff, char c, uint16_t buff_size);
+##### char_append(char *buff, char c, uint16_t buff_size);
 This function takes in a pointer to character array (buff) which we will append char c
 And buff_size is how the size of the buffer is defined. True is returned if the character was appended successfully and False if it was not appended because the buffer was full.
-3. do_http_request and do_https_request;
+##### do_http_request and do_https_request;
 Both of these functions were directly copied from a previous lab in 6.08 and is what is used to format and send our http and https requests to our team’s server and Google’s Api respectively.
-4. wifi_object_builder;
+##### wifi_object_builder;
 This is another function from another earlier lab in 6.08 which generates a json-compatible entry for use with Google's geolocation API.
-5. fetch_location();
+##### fetch_location();
 At the beginning of this function, we utilize the WiFiClient.h library again to scan for nearby networks to pass to Google’s Api (so that we get an accurate estimate of the ESP32’s location). After completing this, we build an https request using a request buffer (variable request). Once we receive the response by utilizing our do_https_request function, we parse the response and create a Json object for the response so that we can easily select values we need from the response.
-6. fetch_navigation_instructions(char* user_id, double lat, double lon, int current_floor, char* destination,int destination_floor);
+##### fetch_navigation_instructions(char* user_id, double lat, double lon, int current_floor, char* destination,int destination_floor);
 This function takes in a user_id for the current user, their latitude and longitude that we received from Google’s Api (stored in lat and lon variables), the current_floor that they are on and the destination building (destination variable) and destination_floor which is received from Destination Selection. With these parameters, we use a request buffer to build a request to send to our team’s server. The server then returns relevant information about the user’s current journey and we parse this response and store it in a JSON format similar to fetch_location.
 
 
@@ -700,17 +700,17 @@ public:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A DestinationSelection obj is initialized with pointers to the tft and to the compass in src.ino and has access to a few public functions:
-1. initialize_imu();
+##### initialize_imu();
 This function sets up the imu by checking if the imu that is a field of our DestinationSelection class has imu.setupIMU(1) is true, otherwise it restarts the imu.
-2. begin_selection();
+##### begin_selection();
 This sets our boolean state variable, selecting, to true meaning that the process of selecting a destination has started.
-3. end_selection();
+##### end_selection();
 This sets our selecting variable to false, meaning the process of selecting a destination is over
-4. get_destination_building(char* building);
+##### get_destination_building(char* building);
 This sets the parameter char* building to the current building number which is found by getting the letters at index destination_building_index of the BUILDINGS char array.
-5. get_destination_floor(char* floor);
+##### get_destination_floor(char* floor);
 This sets the parameter char* floor to the current floor number which is found by getting the letters at index destination_floor_index of the FLOORS char array.
-6. update(int button_flag);
+##### update(int button_flag);
 This is where the work of destination selection happens. It is called once per loop in the src.ino file if the current state is destination selection. Taking in a button flag, the function updates checks the imu readings that determine if the device is tilted or not and determines what state, value, and index various variables should be so that selecting an destination works properly.
 
 #### Navigation
@@ -1117,18 +1117,15 @@ Evolution of device features
 
 
 ### Navigation Milestones
-- Parse JSON object and display the current node, distance to next node, direction to next node, has arrived and eta on the arduino display (LCD)
-[Parsing JSON Video](https://vm.tiktok.com/ZTdQmn29H/)
+- Parse JSON object and display the current node, distance to next node, direction to next node, has arrived and eta on the arduino display (LCD) [Parsing JSON Video](https://vm.tiktok.com/ZTdQmn29H/)
 - We refactored the Navigation functions and state variables into a class that has a .h and a .cpp file so we can call the necessary functions on an instance of the Navigation class.
 - Individual navigation tests
 
 
 ### ApiClient Milestones
-- Implement finite state machine for continually fetching current lat, lon and sending POST request to server
-[ApiClient Video](https://www.youtube.com/shorts/PXAei8u0Cyk)
+- Implement finite state machine for continually fetching current lat, lon and sending POST request to server [ApiClient Video](https://www.youtube.com/shorts/PXAei8u0Cyk)
 - We refactored the API Client processes into a class that has a .h and a .cpp file so we can call the necessary functions on an instance of the ApiClient class.
-- Individual ApiClient test cases
-[ApiClient Test Video](https://youtu.be/vME2KOxRRqY)
+- Individual ApiClient test cases [ApiClient Test Video](https://youtu.be/vME2KOxRRqY)
 
 ### Compass Milestones
 - Deciding on an IMU: MPU9250 [Initial IMU demo](https://www.youtube.com/watch?v=-muk4-Al_LI)
