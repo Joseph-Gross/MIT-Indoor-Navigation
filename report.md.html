@@ -792,6 +792,8 @@ public:
 The tests were meant to mimic external calls to each component as if they were being called from `src.ino`.
 
 #### Compass/
+This folder held the manual tests for the compass. The goal here was to test all components of the compass as if they were being called externally. This essentially served as an integration test for the compass component. This culminated in a script (i.e. src.ino) file we could run that would allow us to verify that the compass was working as intended without all the additional components from the main file for our project (the one that contains every component).
+
 #### ApiClient/
 This folder held the tests for the ApiClient. We tested basic functionality, i.e. connecting to WiFi, sending requests to Google’s Api and our server and receiving a response, and correctly parsing responses.
 
@@ -1059,17 +1061,20 @@ Thursday May 5, 2022: Week 4 Milestones
 Server Milestones
 -------------------------------------------------------------------------------
 - Represent group of MIT's building as weighted graph (from hard coded nodes and edge weights)
-![Building graph](media/map_overlay/nodes_1.png)
 - Demonstrate path finding
-![Graph Code Skeleton](media/Pictures for Final Report/nodes_1.png)
 - Have functioning server side which returns relative user journey information
-JOE CAN YOU PLEASE ADD MOST RELEVANT PICTURES HERE? This is week 2 deliverable 1
 - Add more detail to current graph representation of MIT buildings
 - Edges can be added to our graph overlay, exported to an edges.csv file, and fed to our program. Our code will automatically parse the edges, weight them, and generate our graph.
-- Multiple floors, elevators and stairs ![Floor 0](media/map_overlay/nodes_0.png) ![Elevators](media/map_overlay/nodes_elevators.png) ![Stairs](media/map_overlay/nodes_stairs.png)
+- Multiple floors, elevators and stairs
 - Optimize server side performance by precomputing shortest paths and indexing into this list upon a server request.
-JOE AGAIN HERE COULD YOU PLEASE DECIDE WHAT PICTURES YOU WOULD WANT. There are several in the deliverable (Week 3 deliverable 1) and I’ll let you choose and upload which are best.
 
+![Floor 1](media/map_overlay/nodes_1.png)
+![Floor 0](media/map_overlay/nodes_0.png)
+![Elevators](media/map_overlay/nodes_elevators.png)
+![Stairs](media/map_overlay/nodes_stairs.png)
+
+![Cache vs No Cache Implementation](media/server/cache_no_cache.png)
+![Cache Performance](media/server/cache_performance.png)
 
 
 
@@ -1102,7 +1107,7 @@ Compass Milestones
 
 
 
-Destination Select Milestones
+Destination Selection Milestones
 -------------------------------------------------------------------------------
 - Consistently get building and room numbers and be able to print them to the lcd screen
 [Consistent Building Selection Video](https://vm.tiktok.com/ZTdQu6JRG/)
